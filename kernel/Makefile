@@ -1,22 +1,19 @@
-VERSION		:= 0.0.1
-TARGET		:= x86_64-elf
-NAME		:= Danaos
-HOST		:= unknown
-# If you want explanatory output, set the variable to any value
-VERBOSE		:=
+VERSION			:= 0.0.1
+NAME			:= Danaos
+HOST			:= unknown
 
 # Check the platform to include the correct program variables (see cfg/make)
 ifeq ($(OS),Windows_NT)
-	HOST	:= windows
+	HOST		:= windows
 endif
 
 ifeq ($(shell uname -s), Linux)
-	HOST	:= linux
+	HOST		:= linux
 endif
 
 # Default target
 ifeq ($(ISA),)
-	ISA		:= x86_64
+	ISA			:= x86_64
 endif
 
 # Check for valid ISA
@@ -24,70 +21,78 @@ ifeq ($(or $(filter i686,$(ISA)),$(filter x86_64,$(ISA))),)
     $(error '$(ISA)' is not a supported target)
 endif
 
+TARGET			:= $(ISA)-elf
+
 # Include the configuration for the current OS and the target ISA
 include cfg/make/$(HOST)_config.mk
 include cfg/make/ISA/$(ISA).mk
 
 # Specify the directories of the project
-SRCDIR       := ./src
-INCDIR       := ./src
-CFGDIR       := ./cfg
-OBJDIR       := ./build/obj
-BINDIR       := ./build/bin
-ISODIR       := ./build/iso
-DOCDIR       := ./doc
+SRCDIR			:= ./src
+INCDIR			:= ./src
+CFGDIR			:= ./cfg
+OBJDIR			:= ./build/obj
+BINDIR			:= ./build/bin
+ISODIR			:= ./build/iso
+DOCDIR			:= ./doc
 
 # Name of the executable/iso file
-BIN          := $(BINDIR)/$(NAME)_$(TARGET)_$(VERSION).bin
-ISO          := $(ISODIR)/$(NAME)_$(TARGET)_$(VERSION).iso
+BIN				:= $(BINDIR)/$(NAME)_$(TARGET)_$(VERSION).elf
+ISO				:= $(ISODIR)/$(NAME)_$(TARGET)_$(VERSION).iso
 
 # Scripts for the linker, the debugger, and the code formatter
-LINKERSCRIPT := $(CFGDIR)/linker/$(ISA)/script.ld
-DEBUGSCRIPT  := $(CFGDIR)/debug/gdb.script
-FORMATSCRIPT := $(CFGDIR)/format/clang-format-diff.py
+LINKERSCRIPT	:= $(CFGDIR)/linker/linker-$(ISA).ld
+DEBUGSCRIPT		:= $(CFGDIR)/debug/gdb-$(ISA).script
+FORMATSCRIPT	:= $(CFGDIR)/format/clang-format-diff.py
+
+ifeq ($(debug),)
+	DEBUGFLAGS	:=
+else
+	DEBUGFLAGS	:= -ggdb
+endif
 
 # The flags for compilation. TODO: is it bad practice to define them so absolutely?
-CCFLAGS      := $(ISA_C_FLAGS) -ffreestanding -O0 -std=C11 -g -Wall -Wextra
-CPPFLAGS     := $(ISA_CPP_FLAGS) -ffreestanding -O0 -std=c++14 -fno-exceptions -fno-rtti -g -Wall -Wextra
-ASMFLAGS     := $(ISA_ASM_FLAGS)
-LDFLAGS      := $(ISA_LD_FLAGS) -ffreestanding -O0 -nostdlib -lgcc --disable-__cxa_atexit
-EMUFLAGS     := -no-kvm -net none -vga std -m 64 -serial file:serial.log
-EMUDEBUG     := -s -S
-GDBFLAGS     := -x $(DEBUGSCRIPT)
+CCFLAGS			:= $(ISA_C_FLAGS) -ffreestanding -O0 -std=C11 -g -Wall -Wextra
+CPPFLAGS		:= $(ISA_CPP_FLAGS) -ffreestanding -O0 -std=c++14 -fno-exceptions -fno-rtti -g -Wall -Wextra
+ASMFLAGS		:= $(ISA_ASM_FLAGS)
+LDFLAGS			:= $(ISA_LD_FLAGS) -ffreestanding -O0 -nostdlib -lgcc --disable-__cxa_atexit
+EMUFLAGS		:= -no-kvm -net none -vga std -m 64 -serial file:serial.log
+EMUDEBUG		:= -s -S
+GDBFLAGS		:= -x $(DEBUGSCRIPT)
 
 # Gcc-specific files responsible for (amongst other things) calling global con- and destructors
-CRTBEGIN     := $(shell $(CC) $(CFLAGS) -print-file-name=crtbegin.o)
-CRTEND       := $(shell $(CC) $(CFLAGS) -print-file-name=crtend.o)
-CRTI         := $(OBJDIR)/crti.o
-CRTN         := $(OBJDIR)/crtn.o
+CRTBEGIN		:= $(shell $(CC) $(CFLAGS) -print-file-name=crtbegin.o)
+CRTEND			:= $(shell $(CC) $(CFLAGS) -print-file-name=crtend.o)
+CRTI			:= $(OBJDIR)/crti.o
+CRTN			:= $(OBJDIR)/crtn.o
 
 # Scan the source directory for C, C++ and assembly files (marked by the endings .c, .cc, and .s!)
-SRC          := $(shell $(FIND) -name "*.s")
-SRC          := $(SRC) $(shell $(FIND) -name "*.c")
-SRC          := $(SRC) $(shell $(FIND) -name "*.cc")
+SRC				:= $(shell $(FIND) -name "*.s")
+SRC				:= $(SRC) $(shell $(FIND) -name "*.c")
+SRC				:= $(SRC) $(shell $(FIND) -name "*.cc")
 # Remove all files from the arch directory
-SRC          := $(patsubst $(SRCDIR)/arch/%,,$(SRC))
+SRC				:= $(patsubst $(SRCDIR)/arch/%,,$(SRC))
 # Add the sources from the relevant arch directory again
-SRC          := $(SRC) $(shell $(FIND) $(SRCDIR)/arch/$(ISA) -name "*.s")
-SRC          := $(SRC) $(shell $(FIND) $(SRCDIR)/arch/$(ISA) -name "*.c")
-SRC          := $(SRC) $(shell $(FIND) $(SRCDIR)/arch/$(ISA) -name "*.cc")
+SRC				:= $(SRC) $(shell $(FIND) $(SRCDIR)/arch/$(ISA) -name "*.s")
+SRC				:= $(SRC) $(shell $(FIND) $(SRCDIR)/arch/$(ISA) -name "*.c")
+SRC				:= $(SRC) $(shell $(FIND) $(SRCDIR)/arch/$(ISA) -name "*.cc")
 # Sort the source list and remove duplicates with that
-SRC := $(sort $(SRC))
+SRC				:= $(sort $(SRC))
 
-ARCHINC := $(SRCDIR)/arch/$(ISA)
+ARCHINC			:= $(SRCDIR)/arch/$(ISA)
 
 # Get the corresponding object files by substituting the endings and the directory
-OBJ          := $(notdir $(SRC))
-OBJ          := $(addprefix $(OBJDIR)/,$(OBJ))
-OBJ          := $(subst .s,.o,$(OBJ))
-OBJ          := $(subst .cc,.o,$(OBJ))
-OBJ          := $(subst .c,.o,$(OBJ))
-OBJ          := $(patsubst %/crti.o,,$(OBJ))
-OBJ          := $(patsubst %/crtn.o,,$(OBJ))
+OBJ				:= $(notdir $(SRC))
+OBJ				:= $(addprefix $(OBJDIR)/,$(OBJ))
+OBJ				:= $(subst .s,.o,$(OBJ))
+OBJ				:= $(subst .cc,.o,$(OBJ))
+OBJ				:= $(subst .c,.o,$(OBJ))
+OBJ				:= $(patsubst %/crti.o,,$(OBJ))
+OBJ				:= $(patsubst %/crtn.o,,$(OBJ))
 # Dependencies for the build process
-DEP          := $(patsubst %.o,%.d,$(OBJ))
+DEP				:= $(patsubst %.o,%.d,$(OBJ))
 # Tell make where to look for the files in the rules
-VPATH        := $(dir $(SRC))
+VPATH			:= $(dir $(SRC))
 
 .PHONY: all build clean debug doc format iso main-build pre-build post-build run 
 
@@ -122,21 +127,27 @@ $(OBJDIR)/%.o : %.s Makefile
 ifdef VERBOSE
 	@echo "    (ASM)  $< --> $@"
 endif
-	@$(ASM) -MD $(patsubst %.o,%.d,$@) $< -o $@ -I $(INCDIR) -I $(ARCHINC) $(ASMFLAGS)
+	@$(ASM) -MD $(patsubst %.o,%.d,$@) $< -o $@ -I $(INCDIR) -I $(ARCHINC) $(ASMFLAGS) $(DEBUGFLAGS)
 
 # C rule
 $(OBJDIR)/%.o : %.c Makefile
 ifdef VERBOSE
 	@echo "    (C)  $< --> $@"
 endif
-	@$(CC) -MD -c $< -o $@ -I $(INCDIR) -I $(ARCHINC) $(CCFLAGS)
+	@$(CC) -MD -c $< -o $@ -I $(INCDIR) -I $(ARCHINC) $(CCFLAGS) $(DEBUGFLAGS)
 
 # C++ rule
 $(OBJDIR)/%.o : %.cc Makefile
 ifdef VERBOSE
 	@echo "    (CC)  $< --> $@"
 endif
-	@$(CPP) -MD -c $< -o $@ -I $(INCDIR) -I $(ARCHINC) $(CPPFLAGS)
+	@$(CPP) -MD -c $< -o $@ -I $(INCDIR) -I $(ARCHINC) $(CPPFLAGS) $(DEBUGFLAGS)
+	
+checkmb:
+	@grub-file --is-x86-multiboot $(BIN)
+	
+checkmb2:
+	@grub-file --is-x86-multiboot2 $(BIN)
 
 clean:
 	@echo "(CLEAN)"
@@ -161,9 +172,12 @@ endif
 	@echo "(CLEAN)  done"
 
 # TODO: Currenty, debug symbols are linked into the obj files even if we don't want to debug
-debug: $(BIN)
+debug: $(ISO)
+	@$(OBJCOPY) --only-keep-debug $(BIN) $(BINDIR)/kernel_symbols.sym
 	@echo "(DEBUG)"
-	$(EMU) $(EMUFLAGS) -kernel $< $(EMUDEBUG) -daemonize && $(GDB) $< $(GDBFLAGS)
+	@$(EMU) $(EMUFLAGS) -cdrom $< $(EMUDEBUG) -daemonize && $(GDB) $< $(GDBFLAGS)
+#	@$(QEMU) $(QEMUFLAGS) -drive format=raw,file=$(IMG) -S -s -daemonize & $(GDB) $(BINDIR)/$(SYMBOLS) -x $(DEBUGSCRIPT)
+#	@rm -f $(BINDIR)/$(SYMBOLS)
 	@echo "(DEBUG)  done"
 	
 doc:
@@ -203,13 +217,8 @@ endif
 	
 	@echo "(ISO)  done"
 
-run: $(BIN)
-	@echo "(RUN)"
-	@$(EMU) $(EMUFLAGS) -kernel $<
-	@echo "(RUN)  done"
-
-
-runiso: $(ISO)
+run: $(ISO)
 	@echo "(RUN)"
 	@$(EMU) $(EMUFLAGS) -cdrom $<
 	@echo "(RUN)  done"
+

@@ -1,0 +1,13 @@
+/* Designate entry point of the kernel (located in boot.s) */
+ENTRY(_start)
+/* Specify the output format */
+
+SECTIONS
+{
+	. = 0x0600;
+	/* Bootloader code */
+	.text :
+	{
+		*(.text)
+	}
+}

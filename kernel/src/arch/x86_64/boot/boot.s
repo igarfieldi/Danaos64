@@ -11,57 +11,64 @@
 .global			_entry, _start
 .global			_pageDirectory
 
-// Multiboot2 header constants
-
-.set			MAGIC,					0xE85250D6			// Magic number
-.set			ARCHITECTURE,			0
-
 // Kernel constants
 .set			KERNEL_STACK_SIZE,		32768
 
-// Multiboot section
-.align			8
-.section .multiboot
-_multibootHeaderStart:
-.long			MAGIC
-.long			ARCHITECTURE
-.long			_multibootHeaderEnd - _multibootHeaderStart
-.long			-(MAGIC + ARCHITECTURE + (_multibootHeaderEnd - _multibootHeaderStart))
-// Tag - Elf symbols
-.align			8
-_infoTagStart:
-.short			1
-.short			0
-.int			_infoTagEnd - _infoTagStart
-.int			2			// Request boot loader name
-.int			9			// Request ELF symbols
-_infoTagEnd:
-// Final tag
-.align			8
-.short			0			// Type
-.short			0			// Flags
-.int			8			// Size
-_multibootHeaderEnd:
-
 // Kernel entry point
 .section .text
+
+// First part of the code is 32 bits since we're still in protected mode
+.code32
 
 _entry:
 	cli
 
 	// Setup initial kernel stack
 	movl		$kernel_stack + KERNEL_STACK_SIZE, %esp
-
-	// Push the parameters for the main kernel function here already, since
-	// '_init' may overwrite them
-	movq		%rax, %rdi				// Magic number
-	movl		%ebx, %esi				// Multiboot structure
+_enableLongmode:
+    // Set initial page directory
+    movl        $pml4t, %eax
+    movl        %eax, %cr3
+    
+    // Set PAE paging bit
+    movl        %cr4, %eax
+    orl         $(1 << 5), %eax
+    movl        %eax, %cr4
+    
+    // Set longmode bit
+    movl        $0xC0000080, %ecx
+    rdmsr
+    orl         $(1 << 8), %eax
+    wrmsr
+ 
+	jmp			.hang
+    
+    // Enable paging
+    movl        %cr0, %eax
+    orl         $(1 << 31), %eax
+    movl        %eax, %cr0
+    
+    // Enter 64-bit
+    lgdt		(gdt64Ptr)
+.code64
+	// Re-set the stack
+	movq		$kernel_stack + KERNEL_STACK_SIZE, %rsp
 	
+_callKernel:
+    push        %rax
+    push        %rbx
+    
 	// Let gcc handle the constructor calls
-	call		_init
-	
+    call        _init
+    
+    pop         %rbx
+    pop         %rax
+    movq        %rax, %rdi
+    movq        %rbx, %rsi
+    
 	// Call kernel main function with multiboot info
-	call		kernelMain
+    call        kernelMain
+    
 	
 	// Let gcc handle the desctructor calls 
 	call		_fini
@@ -72,8 +79,50 @@ _entry:
 	hlt
 	jmp			.hang
 
+    
+
 // Data segment
 .section .data
+
+.align			0x1000
+pml4t:
+    .long       pdpt + 0x3
+    .skip       0x1000 - 4, 0
+pdpt:
+    .long       pdt + 0x3
+    .skip       0x1000 - 4, 0
+pdt:
+    .long       pt + 0x3
+    .skip       0x1000 - 4, 0
+pt:
+    .fill       512, 8, 0x3
+
+gdt64:
+    // Null descriptor
+    .short      0
+    .short      0
+    .byte       0
+    .byte       0
+    .byte       0
+    .byte       0
+    // Code descriptor
+gdt64Code:
+    .short      0
+    .short      0
+    .byte       0
+    .byte       0b10011010
+    .byte       0b00100000
+    .byte       0
+    // Data descriptor
+    .short      0
+    .short      0
+    .byte       0
+    .byte       0b10010010
+    .byte       0b00000000
+    .byte       0
+gdt64Ptr:
+    .short      gdt64Ptr - gdt64 - 1
+    .quad       gdt64
 
 // Read-only data segment
 .section .rodata

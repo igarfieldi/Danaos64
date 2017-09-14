@@ -17,9 +17,12 @@ console kernel::m_console;
 kernel::kernel(const multiboot_info *mbinfo) {
 }
 
-extern "C" void kernelMain(uint32_t magic, uintptr_t info) {//const multiboot_info_t *info) {
+extern "C" void kernelMain(uint32_t magic, uintptr_t info) {
+	volatile char *screen = reinterpret_cast<volatile char*>(0xB8000);
+	screen[0] = 'A';
     if (magic != MULTIBOOT2_BOOTLOADER_MAGIC) {
         kernel::m_console.print("Error: The kernel was not loaded by a multiboot loader!");
+        while(true);
     }
 
     kernel::m_console.print("Magic number: []", magic);

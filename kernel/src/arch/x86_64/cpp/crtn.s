@@ -5,6 +5,7 @@
  * for calling constructors/destructors of global objects etc.
 **/
 
+.code64
 /* x86_64 crtn.s */
 .section .init
 	/* Content of .init in crtend.o */

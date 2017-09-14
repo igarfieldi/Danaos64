@@ -7,7 +7,9 @@
 
 .section .init
 .global _init
+
 .type _init, @function
+.code64
 _init:
 	push %rbp
 	movq %rsp, %rbp
@@ -16,6 +18,7 @@ _init:
 .section .fini
 .global _fini
 .type _fini, @function
+.code64
 _fini:
 	push %rbp
 	movq %rsp, %rbp

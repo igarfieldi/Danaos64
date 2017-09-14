@@ -11,6 +11,8 @@
 .global			_entry, _start
 .global			_pageDirectory
 
+.code32
+
 // Multiboot2 header constants
 
 .set			MAGIC,					0xE85250D6			// Magic number

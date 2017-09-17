@@ -1,5 +1,0 @@
-set architecture i686
-symbol-file build/bin/kernel_symbols.sym
-target remote :1234
-break kernelMain
-

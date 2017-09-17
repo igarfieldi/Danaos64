@@ -15,6 +15,7 @@ devices::cga kernel::m_cga(80, 25, 0xB8000);
 console kernel::m_console;
 
 kernel::kernel(const multiboot_info *mbinfo) {
+	(void)mbinfo;
 }
 
 extern "C" void kernelMain(uint32_t magic, uintptr_t info) {

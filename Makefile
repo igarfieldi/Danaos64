@@ -4,16 +4,16 @@ HOST		:= unknown
 
 # Check the platform to include the correct program variables (see cfg/make)
 ifeq ($(OS),Windows_NT)
-	HOST		:= windows
+	HOST	:= windows
 endif
 
 ifeq ($(shell uname -s), Linux)
-	HOST		:= linux
+	HOST	:= linux
 endif
 
 # Default target
 ifeq ($(ISA),)
-	ISA			:= x86_64
+	ISA		:= x86_64
 endif
 
 # Check for valid ISA
@@ -28,8 +28,8 @@ TARGET		:= $(ISA)-elf
 #include cfg/make/ISA/$(ISA).mk
 
 SRCDIR		:= src
-OBJDIR		:= build/obj
-BINDIR		:= build/bin
+OBJDIR		:= build/$(ISA)/obj
+BINDIR		:= build/$(ISA)/bin
 CFGDIR		:= cfg
 
 MBRDIR		:= mbr
@@ -38,37 +38,32 @@ KERNELDIR	:= kernel
 
 IMG			:= $(BINDIR)/$(NAME).img
 
-ASM			:= $(TARGET)-as
-CC			:= $(TARGET)-gcc
-CPP			:= $(TARGET)-g++
-LD			:= $(TARGET)-ld
-OBJCOPY		:= $(TARGET)-objcopy
-CAT			:= cat
-DD			:= dd
-FIND		:= find
-GDB			:= gdb
-QEMU		:= qemu-system-$(ISA)
+CCFLAGS		+= -ffreestanding -O0 -std=C11 -ggdb -Wall -Wextra
+CPPFLAGS	+= -ffreestanding -O0 -std=c++14 -fno-exceptions -fno-rtti -ggdb -Wall -Wextra
+ASMFLAGS	+= -ggdb
+LDFLAGS		+= -ffreestanding -O0 -nostdlib -lgcc --disable-__cxa_atexit -ggdb
+QEMUFLAGS	+= -no-kvm -net none -vga std -m 64 -serial file:serial.log
 
-ASMFLAGS	:= -ggdb
-QEMUFLAGS	:= -no-kvm -net none -vga std -m 64
+include	$(CFGDIR)/make/$(HOST)_config.mk
+include	$(CFGDIR)/make/ISA/$(ISA).mk
 
-DEBUGSCRIPT	:= $(CFGDIR)/debug/gdb.script
-
-
-.PHONY: all build-all clean clean-mbr clean-bootloader clean-kernel build-mbr build-bootloader build-kernel
+DEBUGSCRIPT	:= $(CFGDIR)/debug/gdb-$(ISA).script
 
 include $(MBRDIR)/rules.mk
 include $(BOOTDIR)/rules.mk
+include $(KERNELDIR)/rules.mk
+
+.PHONY: all build-all clean clean-mbr clean-bootloader clean-kernel build-mbr build-bootloader build-kernel
 
 all: build
 
-build: dir build-mbr build-bootloader
+build: dir build-mbr build-bootloader build-kernel
 
-clean: clean-bootloader clean-mbr
+clean: clean-bootloader clean-mbr clean-kernel
 	@rm -rf $(BINDIR)/*
 
 dir:
-	@mkdir -p $(BINDIR)	
+	@mkdir -p $(BINDIR)
 	@mkdir -p $(MBRDIR)/$(BINDIR)
 	@mkdir -p $(MBRDIR)/$(OBJDIR)
 	@mkdir -p $(BOOTDIR)/$(BINDIR)
@@ -79,12 +74,11 @@ dir:
 iso: $(IMG)
 
 $(IMG): build
-	@echo "$(MBRBIN) $(BOOTBIN)"
 	@$(CAT) $(MBRBIN) $(BOOTBIN) > $(IMG)
 
 debug: iso
 	# WIP... needs its own script I fear (if that is even enough)
-	@$(QEMU) $(QEMUFLAGS) -drive format=raw,file=$(IMG) -S -s -daemonize && $(GDB) $(MBRDIR)/$(BINDIR)/$(MBRSYMBOLS) -x $(DEBUGSCRIPT)
+	@$(QEMU) $(QEMUFLAGS) -drive format=raw,file=$(IMG) -S -s -daemonize && $(GDB) $(MBRSYMBOLS) -x $(DEBUGSCRIPT)
 	
 run: iso
 	@$(QEMU) $(QEMUFLAGS) -drive format=raw,file=$(IMG)

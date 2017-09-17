@@ -1,1 +1,1 @@
-build/obj/mbr.o: ./src/screen.h ./src/mbr.s
+build/obj/mbr.o: ./src/mbr.s

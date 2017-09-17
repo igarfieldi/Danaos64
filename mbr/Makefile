@@ -1,6 +1,6 @@
 ISA			:= x86_64
 TARGET		:= $(ISA)-elf
-NAME		:= bootloader
+NAME		:= mbr
 SYMBOLS		:= $(NAME)-symbols.sym
 
 ASM			:= $(TARGET)-as
@@ -18,7 +18,7 @@ else
 	DEBUGFLAGS	:= -ggdb
 endif
 
-ASMFLAGS	:=
+ASMFLAGS	:= -ggdb
 QEMUFLAGS	:= -no-kvm -net none -vga std -m 64
 
 SRCDIR		:= ./src
@@ -48,10 +48,7 @@ all:
 	@mkdir -p $(BINDIR)
 	@$(MAKE) --no-print-directory build
 
-build: $(IMG)
-
-$(IMG): $(BIN)
-	@$(DD) if=$(BIN) bs=512 of=$(IMG)
+build: $(BIN)
 	
 $(BIN): $(ELF)
 	@$(OBJCOPY) -O binary --strip-all $(ELF) $(BIN)
@@ -69,12 +66,4 @@ $(OBJDIR)/%.o : %.s Makefile
 clean:
 	@rm -rf $(OBJDIR)/*
 	@rm -rf $(BINDIR)/*
-
-debug: $(IMG)
-	@$(OBJCOPY) --only-keep-debug $(ELF) $(BINDIR)/$(SYMBOLS)
-	@$(QEMU) $(QEMUFLAGS) -drive format=raw,file=$(IMG) -S -s -daemonize && $(GDB) $(BINDIR)/$(SYMBOLS) -x $(DEBUGSCRIPT)
-	@rm -f $(BINDIR)/$(SYMBOLS)
-	
-run: $(IMG)
-	@$(QEMU) $(QEMUFLAGS) -drive format=raw,file=$(IMG)
 

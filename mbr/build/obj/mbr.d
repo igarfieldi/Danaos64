@@ -1,1 +1,1 @@
-build/obj/mbr.o: ./src/mbr.s
+mbr/build/obj/mbr.o: mbr/src/mbr.s

@@ -76,8 +76,6 @@ load_bootloader:
 	
 .include		"screen.h"
 
-.fill			300, 1, 0
-
 boot_partition_entry:
 	.word		0
 boot_drive:
@@ -86,6 +84,10 @@ boot_drive:
 msg_boot_drive:		.asciz "Boot drive: "
 msg_boot_part:		.asciz "Boot partition: "
 msg_loader_size:	.asciz "Bootloader size: "
+
+.fill			510 - (. - _start), 1, 0
+.byte			0x55
+.byte			0xAA
 
 bootloader_end:
 

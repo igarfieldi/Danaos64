@@ -1,1 +1,2 @@
-build/obj/bootloader.o: ./src/screen.h ./src/bootloader.s
+bootloader/build/obj/bootloader.o: bootloader/src/screen.h \
+ bootloader/src/bootloader.s

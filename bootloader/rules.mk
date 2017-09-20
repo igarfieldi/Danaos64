@@ -10,6 +10,7 @@ BOOTOBJ			:= $(subst .s,.o,$(BOOTOBJ))
 BOOTINCDIR		:= $(BOOTDIR)/$(SRCDIR)
 
 BOOTLDSCRIPT	:= $(BOOTDIR)/$(CFGDIR)/linker/ld.script
+BOOTDEBUGSCRIPT	:= $(BOOTDIR)/$(CFGDIR)/debug/gdb-$(ISA).script
 
 BOOTDEP			:= $(patsubst %.o,%.d,$(BOOTOBJ))
 VPATH			+= $(dir $(BOOTSRC))
@@ -48,7 +49,7 @@ clean-bootloader:
 
 debug-bootloader: build-bootloader
 	@echo "    (MAKE)    Debugging bootloader..."
-	@$(QEMU) $(QEMUFLAGS) -drive format=raw,file=$(BOOTBIN) -S -s -daemonize && $(GDB) $(BOOTSYMBOLS) -x $(DEBUGSCRIPT)
+	@$(QEMU) $(QEMUFLAGS) -drive format=raw,file=$(BOOTBIN) -S -s -daemonize && $(GDB) $(BOOTSYMBOLS) -x $(BOOTDEBUGSCRIPT)
 
 run-bootloader: build-bootloader
 	@echo "    (MAKE)    Running bootloader..."

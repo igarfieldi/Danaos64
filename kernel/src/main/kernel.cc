@@ -25,9 +25,8 @@ extern "C" void kernelMain(uint32_t magic, uintptr_t info) {
         kernel::m_console.print("Error: The kernel was not loaded by a multiboot loader!");
         while(true);
     }
-
-    kernel::m_console.print("Magic number: []", magic);
-    kernel::m_console.print("Hi there!\n");
+	kernel::m_cga.clear();
+    kernel::m_console.print("Magic number: []\n", magic);
 
     multiboot_info *mbinfo = reinterpret_cast<multiboot_info*>(info);
 
@@ -73,6 +72,7 @@ extern "C" void kernelMain(uint32_t magic, uintptr_t info) {
             case MULTIBOOT_TAG_TYPE_ELF_SECTIONS: {
                 auto elf_sections = reinterpret_cast<multiboot_tag_elf_sections*>(info + byte);
                 elf::elf_symbol_lookup elf(elf_sections);
+                //elf.print_all();
                 kernel::m_console.print("Kernel entry symbol: {}\n", elf.lookup(reinterpret_cast<uintptr_t>(&kernelMain)));
                 break;
             }

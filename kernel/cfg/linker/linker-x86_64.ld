@@ -5,24 +5,17 @@ OUTPUT_FORMAT(elf64-x86-64)
 
 SECTIONS
 {
-	. = 0;
-	
-	/* Bootstrap code */
-	.multiboot ALIGN(8) : AT(ADDR(.multiboot))
-	{
-		*(.multiboot)
-	}
-	
-	. = 0x10000;
+	. = 0x100000;
 
 	/* Kernel code */
 	.text ALIGN(4K) : AT(ADDR(.text))
 	{
+		*(.multiboot)
+		*(.text)
 		*(.init)
 		*(.fini)
 		*(.ctors)
 		*(.dtors)
-		*(.text)
 	}
 
 	/* Read-write data (initialized) */

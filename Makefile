@@ -49,13 +49,13 @@ include	$(CFGDIR)/make/ISA/$(ISA).mk
 
 DEBUGSCRIPT	:= $(CFGDIR)/debug/gdb-$(ISA).script
 
-include $(MBRDIR)/rules.mk
-include $(BOOTDIR)/rules.mk
-include $(KERNELDIR)/rules.mk
-
 .PHONY: all build-all clean clean-mbr clean-bootloader clean-kernel build-mbr build-bootloader build-kernel
 
 all: build
+
+include $(MBRDIR)/rules.mk
+include $(BOOTDIR)/rules.mk
+include $(KERNELDIR)/rules.mk
 
 build: dir build-mbr build-bootloader build-kernel
 
@@ -72,9 +72,10 @@ dir:
 	@mkdir -p $(KERNELDIR)/$(OBJDIR)
 	
 iso: $(IMG)
+	@$(CAT) $(MBRBIN) $(BOOTBIN) $(KERNELBIN) > $(IMG)
 
 $(IMG): build
-	@$(CAT) $(MBRBIN) $(BOOTBIN) > $(IMG)
+	@$(CAT) $(MBRBIN) $(BOOTBIN) $(KERNELBIN) > $(IMG)
 
 debug: iso
 	# WIP... needs its own script I fear (if that is even enough)

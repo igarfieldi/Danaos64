@@ -1,7 +1,7 @@
 KERNELNAME			:= kernel
 
 KERNELSYMBOLS		:= $(KERNELDIR)/$(BINDIR)/$(KERNELNAME)-symbols.sym
-KERNELBIN			:= $(KERNELDIR)/$(BINDIR)/$(KERNELNAME).bin
+KERNELBIN			:= $(KERNELDIR)/$(BINDIR)/$(KERNELNAME)-no-debug.elf
 KERNELELF			:= $(KERNELDIR)/$(BINDIR)/$(KERNELNAME).elf
 KERNELISO			:= $(KERNELDIR)/$(BINDIR)/$(KERNELNAME).iso
 KERNELINCDIR		:= $(KERNELDIR)/$(SRCDIR)
@@ -9,6 +9,7 @@ KERNELINCDIR		:= $(KERNELDIR)/$(SRCDIR)
 
 # Scripts for the linker, the debugger, and the code formatter
 KERNELLDSCRIPT		:= $(KERNELDIR)/$(CFGDIR)/linker/linker-$(ISA).ld
+KERNELDEBUGSCRIPT	:= $(KERNELDIR)/$(CFGDIR)/debug/gdb-$(ISA).script
 KERNELFORMATSCRIPT	:= $(KERNELDIR)/$(CFGDIR)/format/clang-format-diff.py
 
 # GCC-specific files responsible for (amongst other things) calling global con- and destructors
@@ -91,11 +92,9 @@ clean-kernel:
 	-@rm -rf $(KERNELDIR)/$(BINDIR)/*
 	-@rm -rf $(KERNELDIR)/$(OBJDIR)/*
 
-
-
 debug-kernel: $(KERNELISO)
 	@echo "    (DEBUG)"
-	@$(QEMU) $(QEMUFLAGS) -drive format=raw,file=$(KERNELISO) -S -s -daemonize && $(GDB) $(KERNELSYMBOLS) -x $(DEBUGSCRIPT)
+	@$(QEMU) $(QEMUFLAGS) -drive format=raw,file=$(KERNELISO) -S -s -daemonize && $(GDB) $(KERNELSYMBOLS) -x $(KERNELDEBUGSCRIPT)
 	@echo "    (DEBUG)   done"
 	
 doc-kernel:
@@ -110,6 +109,9 @@ format-kernel:
 	@echo "    (FORMAT)"
 	@git diff -U0 HEAD^ | python $(KERNELFORMATSCRIPT) -i -p2
 	@echo "    (FORMAT)  done"
+
+iso-kernel: $(KERNELISO)
+
 
 $(KERNELISO): build-kernel
 	@echo "(ISO)"
@@ -126,7 +128,7 @@ endif
 ifdef VERBOSE
 	@echo "    (ISO)     Configuring..."
 endif
-	@echo "set timeout=15\nset default=0\n\nmenuentry \"$(basename $(notdir $(KERNELBIN)))\" {\n   multiboot2 /boot/$(notdir $(KERNELBIN))\n   boot\n}"\
+	@echo "set timeout=0\nset default=0\n\nmenuentry \"$(basename $(notdir $(KERNELBIN)))\" {\n   multiboot2 /boot/$(notdir $(KERNELBIN))\n   boot\n}"\
 		> $(KERNELDIR)/$(BINDIR)/isodir/boot/grub/grub.cfg
 	@$(GRUB) --output $(KERNELISO) $(KERNELDIR)/$(BINDIR)/isodir
 	
@@ -134,6 +136,6 @@ endif
 
 run-kernel: $(KERNELISO)
 	@echo "    (RUN)"
-	$(QEMU) $(QEMUFLAGS) -drive format=raw,file=$(KERNELISO)
+	@$(QEMU) $(QEMUFLAGS) -drive format=raw,file=$(KERNELISO)
 	@echo "    (RUN)     done"
 

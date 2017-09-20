@@ -10,6 +10,7 @@ MBROBJ			:= $(subst .s,.o,$(MBROBJ))
 MBRINCDIR		:= $(MBRDIR)/$(SRCDIR)
 
 MBRLDSCRIPT		:= $(MBRDIR)/$(CFGDIR)/linker/ld.script
+MBRDEBUGSCRIPT	:= $(MBRDIR)/$(CFGDIR)/debug/gdb-$(ISA).script
 
 MBRDEP			:= $(patsubst %.o,%.d,$(MBROBJ))
 VPATH			+= $(dir $(MBRSRC))
@@ -52,7 +53,7 @@ clean-mbr:
 
 debug-mbr: build-mbr
 	@echo "    (MAKE)    Debugging MBR..."
-	@$(QEMU) $(QEMUFLAGS) -drive format=raw,file=$(MBRBIN) -S -s -daemonize && $(GDB) $(MBRSYMBOLS) -x $(DEBUGSCRIPT)
+	@$(QEMU) $(QEMUFLAGS) -drive format=raw,file=$(MBRBIN) -S -s -daemonize && $(GDB) $(MBRSYMBOLS) -x $(MBRDEBUGSCRIPT)
 
 run-mbr: build-mbr
 	@echo "    (MAKE)    Running MBR..."

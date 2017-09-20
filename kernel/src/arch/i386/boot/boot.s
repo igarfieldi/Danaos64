@@ -22,27 +22,30 @@
 .set			KERNEL_STACK_SIZE,		32768
 
 // Multiboot section
+.section		.multiboot, "ax", @progbits
+
+	jmp			_entry
+	
 .align			8
-.section .multiboot
 _multibootHeaderStart:
-.int			MAGIC
-.int			ARCHITECTURE
-.int			_multibootHeaderEnd - _multibootHeaderStart
-.int			-(MAGIC + ARCHITECTURE + (_multibootHeaderEnd - _multibootHeaderStart))
-// Tag - Elf symbols
+	.int		MAGIC
+	.int		ARCHITECTURE
+	.int		_multibootHeaderEnd - _multibootHeaderStart
+	.int		-(MAGIC + ARCHITECTURE + (_multibootHeaderEnd - _multibootHeaderStart))
+	// Tag - Elf symbols
 .align			8
 _infoTagStart:
-.short			1
-.short			0
-.int			_infoTagEnd - _infoTagStart
-.int			2			// Request boot loader name
-.int			9			// Request ELF symbols
+	.short		1
+	.short		0
+	.int		_infoTagEnd - _infoTagStart
+	.int		2			// Request boot loader name
+	.int		9			// Request ELF symbols
 _infoTagEnd:
-// Final tag
-.align			8
-.short			0			// Type
-.short			0			// Flags
-.int			8			// Size
+	// Final tag
+	.align		8
+	.short		0			// Type
+	.short		0			// Flags
+	.int		8			// Size
 _multibootHeaderEnd:
 
 // Kernel entry point

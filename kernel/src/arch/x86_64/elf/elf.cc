@@ -4,7 +4,11 @@
 
 namespace elf {
 
-    elf_symbol_lookup::elf_symbol_lookup(const multiboot_tag_elf_sections *header) {
+	symbol_lookup::symbol_lookup() : symbolTable(nullptr), stringTable(nullptr),
+									symbols(0), strings(0) {
+	}
+
+    void symbol_lookup::init(const multiboot_tag_elf_sections *header) {
         auto sectionHeader = reinterpret_cast<const section_header *>(header->sections);
     
         const char *symbolHeaderStringTable =
@@ -22,7 +26,7 @@ namespace elf {
         }
     }
 
-    const char *elf_symbol_lookup::lookup(uintptr_t address) {
+    const char *symbol_lookup::lookup(uintptr_t address) {
         const symbol *curr = symbolTable;
         for (size_t i = 0; i < symbols; i++) {
             if (curr->st_info.type == symbol_type::FUNC) {
@@ -36,7 +40,7 @@ namespace elf {
         return "";
     }
     
-    void elf_symbol_lookup::print_all() {
+    void symbol_lookup::print_all() {
         for (size_t i = 0; i < symbols; i++) {
             if (symbolTable[i].st_info.type == symbol_type::FUNC) {
                 kernel::m_console.print("{} ", &stringTable[symbolTable[i].st_name]);

@@ -149,7 +149,7 @@ namespace elf {
         Elf64_Xword st_size;
     } __attribute__((packed));
 
-    class elf_symbol_lookup {
+    class symbol_lookup {
     private:
         const symbol *symbolTable;
         const char *stringTable;
@@ -157,8 +157,14 @@ namespace elf {
         Elf64_Xword strings;
     
     public:
-        elf_symbol_lookup(const multiboot_tag_elf_sections *headers);
+    	symbol_lookup();
     
+        void init(const multiboot_tag_elf_sections *headers);
+    
+    	template < class R, class... Args >
+    	const char *lookup(R (*func)(Args...)) {
+    		return lookup(reinterpret_cast<uintptr_t>(func));
+    	}
         const char *lookup(uintptr_t address);
         void print_all();
     };

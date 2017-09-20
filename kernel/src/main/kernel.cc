@@ -10,12 +10,15 @@
 #include "kernel.h"
 #include "elf/elf.h"
 #include "libk/math.h"
+#include "debug/trace.h"
 
 devices::cga kernel::m_cga(80, 25, 0xB8000);
 console kernel::m_console;
+elf::symbol_lookup kernel::m_elf_lookup;
 
 kernel::kernel(const multiboot_info *mbinfo) {
 	(void)mbinfo;
+	debug::backtrace(2);
 }
 
 extern "C" void kernelMain(uint32_t magic, uintptr_t info) {
@@ -29,6 +32,7 @@ extern "C" void kernelMain(uint32_t magic, uintptr_t info) {
     kernel::m_console.print("Magic number: []\n", magic);
 
     multiboot_info *mbinfo = reinterpret_cast<multiboot_info*>(info);
+    multiboot_tag_elf_sections *elf_sections = nullptr;
 
     kernel::m_console.print("Multiboot info size: {}\n", mbinfo->size);
     unsigned int byte = 8;
@@ -70,10 +74,7 @@ extern "C" void kernelMain(uint32_t magic, uintptr_t info) {
                 break;
             }
             case MULTIBOOT_TAG_TYPE_ELF_SECTIONS: {
-                auto elf_sections = reinterpret_cast<multiboot_tag_elf_sections*>(info + byte);
-                elf::elf_symbol_lookup elf(elf_sections);
-                //elf.print_all();
-                kernel::m_console.print("Kernel entry symbol: {}\n", elf.lookup(reinterpret_cast<uintptr_t>(&kernelMain)));
+                elf_sections = reinterpret_cast<multiboot_tag_elf_sections*>(info + byte);
                 break;
             }
             case MULTIBOOT_TAG_TYPE_APM: {
@@ -94,6 +95,14 @@ extern "C" void kernelMain(uint32_t magic, uintptr_t info) {
             byte += 8 - (byte % 8);
         }
     }
+    
+    if(elf_sections != nullptr) {
+		kernel::m_elf_lookup.init(elf_sections);
+		kernel::m_console.print("Main function: {}\n",
+						kernel::m_elf_lookup.lookup(kernelMain));
+		debug::backtrace(1);
+    }
+    kernel k(mbinfo);
 
     while(true);
 }

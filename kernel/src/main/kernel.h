@@ -1,7 +1,6 @@
 #ifndef DANAOS_MAIN_KERNEL_H_
 #define DANAOS_MAIN_KERNEL_H_
 
-#include "devices/cga.h"
 #include "main/console.h"
 #include "boot/multiboot2.h"
 #include "elf/elf.h"
@@ -17,7 +16,6 @@ private:
 public:
     kernel(const multiboot_info *mbinfo);
     
-    static devices::cga m_cga;
     static console m_console;
     static elf::symbol_lookup m_elf_lookup;
 };

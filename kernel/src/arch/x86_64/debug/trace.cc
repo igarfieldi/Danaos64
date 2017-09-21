@@ -12,7 +12,8 @@ namespace debug {
 			:
 			:
 		);
-		
+		kernel::m_console.print("Stacktrace:\n");
+
 		for(size_t frame = 0; frame < maxFrames; ++frame) {
 			uintptr_t *rip = &rbp[1];
 			if(*rip == 0) {
@@ -21,8 +22,7 @@ namespace debug {
 			
 			rbp = reinterpret_cast<uintptr_t*>(rbp[0]);
 			const char *name = kernel::m_elf_lookup.lookup(*rip);
-			kernel::m_console.print("Method: {} (Address [])\n",
-									name, *rip);
+			kernel::m_console.print("  []\t-- {}\n", *rip, name);
 		}
 	}
 

@@ -39,9 +39,9 @@ KERNELDIR	:= kernel
 IMG			:= $(BINDIR)/$(NAME).img
 
 CCFLAGS		+= -ffreestanding -O0 -std=C11 -ggdb -Wall -Wextra
-CPPFLAGS	+= -ffreestanding -O0 -std=c++14 -fno-exceptions -fno-rtti -ggdb -Wall -Wextra
+CPPFLAGS	+= -ffreestanding -O0 -std=c++17 -fno-exceptions -fno-rtti -ggdb -Wall -Wextra
 ASMFLAGS	+= -ggdb
-LDFLAGS		+= -ffreestanding -O0 -nostdlib -lgcc --disable-__cxa_atexit -ggdb
+LDFLAGS		+= -ffreestanding -O0 -nostdlib -std=c++17 -lgcc --disable-__cxa_atexit -ggdb
 QEMUFLAGS	+= -no-kvm -net none -vga std -m 64 -serial file:serial.log
 
 include	$(CFGDIR)/make/$(HOST)_config.mk

@@ -3,40 +3,43 @@
 
 namespace devices {
 
-    cga::cga(unsigned int dim_x, unsigned int dim_y, uintptr_t loc) : m_dim_x(dim_x),
-            m_dim_y(dim_y), m_screen(reinterpret_cast<volatile char*>(loc)) {
+    cga::cga() : m_screen(reinterpret_cast<volatile char*>(cga::DEFAULT_BUFFER_LOCATION)),
+                m_width(DEFAULT_WIDTH), m_height(DEFAULT_HEIGHT) {
     }
-
-    void cga::print(char c, unsigned int x, unsigned int y) {
-        this->print(c, DEFAULT_ATTRIBUTE, x, y);
-    }
-    void cga::print(char c, char attr, unsigned int x, unsigned int y) {
-        if(x < m_dim_x && y < m_dim_y) {
-            m_screen[2*(x + y*m_dim_x)] = c;
-            m_screen[2*(x + y*m_dim_x) + 1] = attr;
+	
+	void cga::init(uintptr_t framebuffer_addr, size_t width, size_t height) {
+		m_screen = reinterpret_cast<volatile char*>(framebuffer_addr);
+		m_width = width;
+		m_height = height;
+	}
+	
+    void cga::print(char c, char attr, size_t x, size_t y) {
+        if(x < m_width && y < m_height) {
+            m_screen[buffer_index(x, y)] = c;
+            m_screen[buffer_index(x, y) + 1] = attr;
         }
     }
 
-    void cga::scroll_down(unsigned int steps) {
-        steps = math::min(m_dim_y, steps);
-        for(unsigned int y = 0; y < m_dim_y - steps; ++y) {
-            for(unsigned int x = 0; x < m_dim_x; ++x) {
-                m_screen[2*(x + y*m_dim_x)] = m_screen[2*(x + (y + steps)*m_dim_x)];
-                m_screen[2*(x + y*m_dim_x) + 1] = m_screen[2*(x + (y + steps)*m_dim_x) + 1];
+    void cga::scroll_down(size_t steps, char clear_char, char clear_attribute) {
+        steps = math::min(m_height, steps);
+        for(size_t y = 0; y < m_height - steps; ++y) {
+            for(size_t x = 0; x < m_width; ++x) {
+                m_screen[buffer_index(x, y)] = m_screen[buffer_index(x, y + steps)];
+                m_screen[buffer_index(x, y) + 1] = m_screen[buffer_index(x, y + steps) + 1];
             }
         }
-        for(unsigned int y = m_dim_y - steps; y < m_dim_y; ++y) {
-            for(unsigned int x = 0; x < m_dim_x; ++x) {
-                m_screen[2*(x + y*m_dim_x)] = CLEAR_CHAR;
-                m_screen[2*(x + y*m_dim_x) + 1] = DEFAULT_ATTRIBUTE;
+        for(size_t y = m_height - steps; y < m_height; ++y) {
+            for(size_t x = 0; x < m_width; ++x) {
+                m_screen[buffer_index(x, y)] = clear_char;
+                m_screen[buffer_index(x, y) + 1] = clear_attribute;
             }
         }
     }
-    void cga::clear() {
-        for(unsigned int y = 0; y < m_dim_y; ++y) {
-            for(unsigned int x = 0; x < m_dim_x; ++x) {
-                m_screen[2*(x + y*m_dim_x)] = CLEAR_CHAR;
-                m_screen[2*(x + y*m_dim_x) + 1] = DEFAULT_ATTRIBUTE;
+    void cga::clear(char clear_char, char clear_attribute) {
+        for(size_t y = 0; y < m_height; ++y) {
+            for(size_t x = 0; x < m_width; ++x) {
+                m_screen[buffer_index(x, y)] = clear_char;
+                m_screen[buffer_index(x, y) + 1] = clear_attribute;
             }
         }
     }

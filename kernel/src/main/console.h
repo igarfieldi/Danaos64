@@ -8,6 +8,8 @@ public:
     enum class radix_base : uint8_t { BIN = 2, DEC = 10, HEX = 16 };
 
 private:
+	static constexpr char PRINT_ATTRIBUTE = 15;
+
     void put(char c);
 
     void print(bool val);

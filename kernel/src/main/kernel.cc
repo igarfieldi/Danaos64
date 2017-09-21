@@ -9,10 +9,10 @@
 #include <stdint.h>
 #include "kernel.h"
 #include "elf/elf.h"
+#include "devices/cga.h"
 #include "libk/math.h"
 #include "debug/trace.h"
 
-devices::cga kernel::m_cga(80, 25, 0xB8000);
 console kernel::m_console;
 elf::symbol_lookup kernel::m_elf_lookup;
 
@@ -22,28 +22,22 @@ kernel::kernel(const multiboot_info *mbinfo) {
 }
 
 extern "C" void kernelMain(uint32_t magic, uintptr_t info) {
-	volatile char *screen = reinterpret_cast<volatile char*>(0xB8000);
-	screen[0] = 'A';
-    if (magic != MULTIBOOT2_BOOTLOADER_MAGIC) {
+    /*if (magic != MULTIBOOT2_BOOTLOADER_MAGIC) {
         kernel::m_console.print("Error: The kernel was not loaded by a multiboot loader!");
         while(true);
-    }
-	kernel::m_cga.clear();
-    kernel::m_console.print("Magic number: []\n", magic);
+    }*/
 
     multiboot_info *mbinfo = reinterpret_cast<multiboot_info*>(info);
     multiboot_tag_elf_sections *elf_sections = nullptr;
+    multiboot_tag_framebuffer_common *framebuffer = nullptr;
+    multiboot_tag_mmap* memmap = nullptr;
 
-    kernel::m_console.print("Multiboot info size: {}\n", mbinfo->size);
     unsigned int byte = 8;
-    unsigned int y = 3;
     while(byte < mbinfo->size) {
         uint32_t type = reinterpret_cast<multiboot_tag*>(info + byte)->type;
         uint32_t size = reinterpret_cast<multiboot_tag*>(info + byte)->size;
-        kernel::m_console.print("Segment type {} | size {}\n", type, size);
-        ++y;
         switch(type) {
-            case MULTIBOOT_TAG_TYPE_CMDLINE:
+            /*case MULTIBOOT_TAG_TYPE_CMDLINE:
                 kernel::m_console.print("Boot command-line: {}\n", reinterpret_cast<multiboot_tag_string*>(info + byte)->string);
                 break;
             case MULTIBOOT_TAG_TYPE_BOOT_LOADER_NAME:
@@ -58,26 +52,24 @@ extern "C" void kernelMain(uint32_t magic, uintptr_t info) {
                 break;
             }
             case MULTIBOOT_TAG_TYPE_BOOTDEV:
-                kernel::m_console.print("Boot device: {}\n", reinterpret_cast<multiboot_tag_bootdev*>(info + byte)->biosdev);
+                kernel::m_console.print("Boot device: []\n", reinterpret_cast<multiboot_tag_bootdev*>(info + byte)->biosdev);
                 break;
             case MULTIBOOT_TAG_TYPE_MMAP: {
-                auto memmap = reinterpret_cast<multiboot_tag_mmap*>(info + byte);
-                kernel::m_console.print("Memory map entries: {}\n", (memmap->size - 16) / memmap->entry_size);
+                memmap = reinterpret_cast<multiboot_tag_mmap*>(info + byte);
                 break;
             }
             case MULTIBOOT_TAG_TYPE_VBE:
                 kernel::m_console.print("VBE mode: {}\n", reinterpret_cast<multiboot_tag_vbe*>(info + byte)->vbe_mode);
-                break;
+                break;*/
             case MULTIBOOT_TAG_TYPE_FRAMEBUFFER: {
-                auto framebuffer = reinterpret_cast<multiboot_tag_framebuffer_common*>(info + byte);
-                kernel::m_console.print("Framebuffer address: []\n", static_cast<uintptr_t>(framebuffer->framebuffer_addr));
+                framebuffer = reinterpret_cast<multiboot_tag_framebuffer_common*>(info + byte);
                 break;
             }
             case MULTIBOOT_TAG_TYPE_ELF_SECTIONS: {
                 elf_sections = reinterpret_cast<multiboot_tag_elf_sections*>(info + byte);
                 break;
             }
-            case MULTIBOOT_TAG_TYPE_APM: {
+            /*case MULTIBOOT_TAG_TYPE_APM: {
                 auto apm = reinterpret_cast<multiboot_tag_apm*>(info + byte);
                 kernel::m_console.print("APM version: {}\n", apm->version);
                 break;
@@ -86,7 +78,7 @@ extern "C" void kernelMain(uint32_t magic, uintptr_t info) {
                 auto acpi = reinterpret_cast<multiboot_tag_old_acpi*>(info + byte);
                 kernel::m_console.print("ACPI root: {}\n", reinterpret_cast<char*>(acpi->rsdp));
                 break;
-            }
+            }*/
         }
 
         // Align the tag structure
@@ -96,13 +88,22 @@ extern "C" void kernelMain(uint32_t magic, uintptr_t info) {
         }
     }
     
+    if(framebuffer != nullptr) {
+    	devices::cga::instance().init(framebuffer->framebuffer_addr, framebuffer->framebuffer_width,
+                        framebuffer->framebuffer_height);
+        devices::cga::instance().clear();
+        kernel::m_console.print("Framebuffer initialized at [] ({}/{})\n", devices::cga::instance().buffer_address(),
+                            devices::cga::instance().width(), devices::cga::instance().height());
+    }
+    if(memmap != nullptr) {
+		kernel::m_console.print("Memory map entries: {}\n", (memmap->size - 16) / memmap->entry_size);
+    }
     if(elf_sections != nullptr) {
 		kernel::m_elf_lookup.init(elf_sections);
-		kernel::m_console.print("Main function: {}\n",
-						kernel::m_elf_lookup.lookup(kernelMain));
-		debug::backtrace(1);
+		debug::backtrace(2);
     }
-    kernel k(mbinfo);
+
+	kernel::m_console.print("Kernel loaded!");
 
     while(true);
 }

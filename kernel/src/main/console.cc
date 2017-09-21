@@ -1,5 +1,5 @@
 #include "console.h"
-#include "main/kernel.h"
+#include "devices/cga.h"
 #include "libk/math.h"
 
 console::console() : screenX(0), screenY(0), base(radix_base::DEC) {
@@ -15,7 +15,7 @@ void console::put(char c) {
             screenY++;
             break;
         default:
-            kernel::m_cga.print(c, screenX++, screenY);
+            devices::cga::instance().print(c, PRINT_ATTRIBUTE, screenX++, screenY);
     }
 
     while (screenX >= 80) {
@@ -23,7 +23,7 @@ void console::put(char c) {
         screenY++;
     }
     while (screenY >= 25) {
-        kernel::m_cga.scroll_down();
+        devices::cga::instance().scroll_down();
         screenY--;
     }
 }

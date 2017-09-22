@@ -3,7 +3,8 @@ KERNELNAME			:= kernel
 KERNELSYMBOLS		:= $(KERNELDIR)/$(BINDIR)/$(KERNELNAME)-symbols.sym
 KERNELBIN			:= $(KERNELDIR)/$(BINDIR)/$(KERNELNAME)-no-debug.elf
 KERNELELF			:= $(KERNELDIR)/$(BINDIR)/$(KERNELNAME).elf
-KERNELISO			:= $(KERNELDIR)/$(BINDIR)/$(KERNELNAME).iso
+KERNELELFSTRIPPED	:= $(KERNELDIR)/$(BINDIR)/$(KERNELNAME)-stripped.elf
+KERNELIMG			:= $(KERNELDIR)/$(BINDIR)/$(KERNELNAME).img
 KERNELINCDIR		:= $(KERNELDIR)/$(SRCDIR)
 
 
@@ -54,9 +55,13 @@ $(KERNELSYMBOLS): $(KERNELELF)
 	@echo "    (OBJCOPY) Creating symbol file..."
 	@$(OBJCOPY) --only-keep-debug $(KERNELELF) $(KERNELSYMBOLS)
 	
-$(KERNELBIN): $(KERNELELF)
+$(KERNELBIN): $(KERNELELFSTRIPPED)
+	@echo "    (OBJCOPY) Creating plain binary..."
+	@$(OBJCOPY) -O binary $(KERNELELFSTRIPPED) $(KERNELBIN)
+	
+$(KERNELELFSTRIPPED): $(KERNELELF)
 	@echo "    (OBJCOPY) Stripping debug info..."
-	@$(OBJCOPY) --strip-debug $(KERNELELF) $(KERNELBIN)
+	@$(OBJCOPY) --strip-debug $(KERNELELF) $(KERNELELFSTRIPPED)
 
 # The binary depends on the object files which have sources and the crti etc. files from gcc (the link order is important!)
 $(KERNELELF): $(KERNELCRTI) $(KERNELCRTBEGIN) $(KERNELOBJ) $(KERNELCRTEND) $(KERNELCRTN)
@@ -92,9 +97,9 @@ clean-kernel:
 	-@rm -rf $(KERNELDIR)/$(BINDIR)/*
 	-@rm -rf $(KERNELDIR)/$(OBJDIR)/*
 
-debug-kernel: $(KERNELISO)
+debug-kernel: $(KERNELIMG)
 	@echo "    (DEBUG)"
-	@$(QEMU) $(QEMUFLAGS) -drive format=raw,file=$(KERNELISO) -S -s -daemonize && $(GDB) $(KERNELSYMBOLS) -x $(KERNELDEBUGSCRIPT)
+	@$(QEMU) $(QEMUFLAGS) -drive format=raw,file=$(KERNELIMG) -S -s -daemonize && $(GDB) $(KERNELSYMBOLS) -x $(KERNELDEBUGSCRIPT)
 	@echo "    (DEBUG)   done"
 	
 doc-kernel:
@@ -110,10 +115,10 @@ format-kernel:
 	@git diff -U0 HEAD^ | python $(KERNELFORMATSCRIPT) -i -p2
 	@echo "    (FORMAT)  done"
 
-iso-kernel: $(KERNELISO)
+img-kernel: $(KERNELIMG)
 
 
-$(KERNELISO): build-kernel
+$(KERNELIMG): build-kernel
 	@echo "(ISO)"
 ifdef VERBOSE
 	@echo "    (ISO)     Creating directories..."
@@ -124,18 +129,18 @@ endif
 ifdef VERBOSE
 	@echo "    (ISO)     Copying binaries..."
 endif
-	@cp $(KERNELBIN) $(KERNELDIR)/$(BINDIR)/isodir/boot/$(notdir $(BIN))
+	@cp $(KERNELELFSTRIPPED) $(KERNELDIR)/$(BINDIR)/isodir/boot/$(notdir $(BIN))
 ifdef VERBOSE
 	@echo "    (ISO)     Configuring..."
 endif
-	@echo "set timeout=0\nset default=0\n\nmenuentry \"$(basename $(notdir $(KERNELBIN)))\" {\n   multiboot2 /boot/$(notdir $(KERNELBIN))\n   boot\n}"\
+	@echo "set timeout=0\nset default=0\n\nmenuentry \"$(basename $(notdir $(KERNELELFSTRIPPED)))\" {\n   multiboot2 /boot/$(notdir $(KERNELELFSTRIPPED))\n   boot\n}"\
 		> $(KERNELDIR)/$(BINDIR)/isodir/boot/grub/grub.cfg
-	@$(GRUB) --output $(KERNELISO) $(KERNELDIR)/$(BINDIR)/isodir
+	@$(GRUB) --output $(KERNELIMG) $(KERNELDIR)/$(BINDIR)/isodir
 	
 	@echo "    (ISO)     done"
 
-run-kernel: $(KERNELISO)
+run-kernel: $(KERNELIMG)
 	@echo "    (RUN)"
-	@$(QEMU) $(QEMUFLAGS) -drive format=raw,file=$(KERNELISO)
+	@$(QEMU) $(QEMUFLAGS) -drive format=raw,file=$(KERNELIMG)
 	@echo "    (RUN)     done"
 

@@ -75,6 +75,7 @@ _enableLongmode:
     movl        $pml4t, %eax
     movl        %eax, %cr3
     
+.set_pae:
     // Set PAE paging bit
     movl        %cr4, %eax
     orl         $(1 << 5), %eax
@@ -85,7 +86,7 @@ _enableLongmode:
     rdmsr
     orl         $(1 << 8), %eax
     wrmsr
-    
+enable_paging:
     // Enable paging
     movl        %cr0, %eax
     orl         $(1 << 31), %eax

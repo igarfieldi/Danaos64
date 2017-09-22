@@ -4,8 +4,12 @@
 
 .set			BOOTLOADER_START,		0x7C00
 .set			BOOTLOADER_STACK,		0x0800
+.set			KERNEL_ADDR,			0x8000
+.set			KERNEL_SEGMENT,			0x0800
 .set			SECTOR_SIZE,			0x0200
 .set			SECTOR_SHIFT,			0x9
+.set			CODE_SEGMENT,			0x8
+.set			DATA_SEGMENT,			0x10
 
 .section		.text
 
@@ -77,7 +81,7 @@ load_bootloader:
 	movw		(boot_sector_end), %cx
 	movb		1(%si), %dh								// Starting head
 	movw		(boot_drive), %dx						// Drive
-	movw		$0x800, %bx
+	movw		$KERNEL_SEGMENT, %bx
 	movw		%bx, %es								// We need to switch segments
 	movw		$0x0, %bx								// Target address: since the first segment is already loaded, go one past
 	movb		$0x02, %ah								// BIOS interrupt number
@@ -93,22 +97,32 @@ switch:
 	movl		%cr0, %eax
 	orl			$1, %eax
 	movl		%eax, %cr0
-	jmp			$0x08, $protectedMode
+	jmp			$CODE_SEGMENT, $protectedMode
 	
 .include		"screen.h"
 
 .code32
 protectedMode:
-	movw		$0x10, %ax
+	movw		$DATA_SEGMENT, %ax
 	movw		%ax, %ds
 	movw		%ax, %es
 	movw		%ax, %fs
 	movw		%ax, %gs
 	movw		%ax, %ss
-	sti
-	jmp			0x8000
-	//call		_printNewline
-	//call		_printNumber
+
+	// Copy the kernel from where we loaded it to where it is supposed to go
+	movl		$KERNEL_ADDR, %esi
+	movl		(kernel_entry), %edi
+	movl		(kernel_sectors), %eax
+	movl		$SECTOR_SIZE, %ecx
+	mull		%ecx
+	movl		%eax, %ecx
+	rep			movsb
+
+jump_kernel:
+	movl		(kernel_entry), %edi
+	// Jump to the kernel
+	jmp			*%edi
 	
 .hang:
 	cli
@@ -154,11 +168,14 @@ codeseg:
 	.byte		0
 gdt_end:
 
-.fill			510 - (. - _start), 1, 0
+.fill			512 - 8 - (. - _start), 1, 0
 kernel_sectors:
-	.word		0x29									// Kernel size gets written here by IMG builder
-.byte			0x55
-.byte			0xAA
+	.word		0x78								// Kernel size gets written here by IMG builder
+kernel_entry:
+	.int		0x100000
+boot_signature:
+	.byte			0x55
+	.byte			0xAA
 
 .align			512, 0
 

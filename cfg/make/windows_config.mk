@@ -9,3 +9,4 @@ EMU			:= C:/qemu/qemu-system-i386
 GRUB		:= C:/grub/grub-mkrescue
 CAT			:= type
 DD			:= 
+CP			:= cp

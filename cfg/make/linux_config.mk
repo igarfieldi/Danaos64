@@ -7,5 +7,6 @@ GDB			:= gdb
 FIND		:= find
 CAT			:= cat
 DD			:= dd
+CP			:= cp
 QEMU		:= qemu-system-$(ISA)
 GRUB		:= grub-mkrescue

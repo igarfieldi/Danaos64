@@ -1,2 +1,3 @@
 # Ignore binaries and object files
 build/
+.vscode/

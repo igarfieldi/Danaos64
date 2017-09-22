@@ -22,10 +22,13 @@ kernel::kernel(const multiboot_info *mbinfo) {
 }
 
 extern "C" void kernelMain(uint32_t magic, uintptr_t info) {
-    /*if (magic != MULTIBOOT2_BOOTLOADER_MAGIC) {
-        kernel::m_console.print("Error: The kernel was not loaded by a multiboot loader!");
+    devices::cga::instance().clear();
+
+    if (magic != MULTIBOOT2_BOOTLOADER_MAGIC) {
+        kernel::m_console.print("Error: The kernel was not loaded by a multiboot loader "
+                        "(possibly our custom bootloader, which ironically isn't supported yet ^.^)!");
         while(true);
-    }*/
+    }
 
     multiboot_info *mbinfo = reinterpret_cast<multiboot_info*>(info);
     multiboot_tag_elf_sections *elf_sections = nullptr;

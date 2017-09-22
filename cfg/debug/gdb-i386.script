@@ -1,4 +1,4 @@
 set architecture i386
 add-symbol-file bootloader/build/i386/bin/bootloader-symbols.sym 0x7C00
-add-symbol-file kernel/build/i386/bin/kernel-symbols.sym 0x8000
+add-symbol-file kernel/build/i386/bin/kernel-symbols.sym 0x100000
 target remote:1234

@@ -30,21 +30,14 @@ _start:
 	movw		%si, (boot_partition_entry)
 	
 	// TODO: relocation!
-	
-	// Since we cannot rely on the MBR to load all of the bootloader, do so know if needed
-	movw		$(bootloader_end - _start), %ax
-	movw		%ax, %bx								// Copy value for later
-	shr			$SECTOR_SHIFT, %ax						// Right-shift instead of division: size / 512 => number of sectors
-	andw		$(SECTOR_SIZE - 1), %bx					// Check for remainder
-	cmp			$0, %bx
-	jnz			load_bootloader							// If we don't have a remainder, we don't need to load another sector
-	subw		$1, %ax									// But since the first sector is already in memory we need one less
 
 load_bootloader:
 	sti
 
 	// Load the sectors from the boot drive
 	
+	movw		(bootloader_sectors), %ax
+	subw		$1, %ax
 	movb		3(%si), %ch								// Starting cylinder 0:7
 	movb		2(%si), %cl								// Starting sector + cylinder 8:9
 	addb		$1, %cl									// Increase sector by one because the first was loaded to begin with
@@ -61,7 +54,7 @@ load_bootloader:
 	movb		$7, %bl
 	movw		$msg_loader_size, %si
 	call		_printMsg
-	movw		$(bootloader_end - _start), %ax
+	movw		(bootloader_sectors), %ax
 	call		_printNumber
 	call		_printNewline
 	movw		$msg_boot_drive, %si
@@ -99,7 +92,7 @@ switch:
 	movl		%eax, %cr0
 	jmp			$CODE_SEGMENT, $protectedMode
 	
-.include		"screen.h"
+.include		"screen.i"
 
 .code32
 protectedMode:
@@ -168,7 +161,9 @@ codeseg:
 	.byte		0
 gdt_end:
 
-.fill			512 - 8 - (. - _start), 1, 0
+.fill			512 - 10 - (. - _start), 1, 0
+bootloader_sectors:
+	.word		0x01
 kernel_sectors:
 	.word		0x78								// Kernel size gets written here by IMG builder
 kernel_entry:
@@ -176,8 +171,3 @@ kernel_entry:
 boot_signature:
 	.byte			0x55
 	.byte			0xAA
-
-.align			512, 0
-
-bootloader_end:
-

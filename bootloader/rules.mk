@@ -3,11 +3,13 @@ BOOTNAME		:= bootloader
 BOOTSYMBOLS		:= $(BOOTDIR)/$(BINDIR)/$(BOOTNAME)-symbols.sym
 BOOTBIN			:= $(BOOTDIR)/$(BINDIR)/$(BOOTNAME).bin
 BOOTELF			:= $(BOOTDIR)/$(BINDIR)/$(BOOTNAME).elf
-BOOTSRC			:= $(shell $(FIND) $(BOOTDIR) -name "*.s")
+BOOTSRCDIR		:= $(BOOTDIR)/$(SRCDIR)
+BOOTSRC			:= $(shell $(FIND) $(BOOTSRCDIR) -name "*.s")
 BOOTOBJ			:= $(notdir $(BOOTSRC))
 BOOTOBJ			:= $(addprefix $(BOOTDIR)/$(OBJDIR)/,$(BOOTOBJ))
 BOOTOBJ			:= $(subst .s,.o,$(BOOTOBJ))
-BOOTINCDIR		:= $(BOOTDIR)/$(SRCDIR)
+BOOTINCDIR		:= $(BOOTSRCDIR)
+BOOTARCHINCDIR	:= $(BOOTSRCDIR)/arch/$(ISA)
 
 BOOTLDSCRIPT	:= $(BOOTDIR)/$(CFGDIR)/linker/ld.script
 BOOTDEBUGSCRIPT	:= $(BOOTDIR)/$(CFGDIR)/debug/gdb-$(ISA).script
@@ -40,7 +42,7 @@ $(BOOTDIR)/$(OBJDIR)/%.o : %.s
 ifdef VERBOSE
 	@echo "    (ASM)     $< --> $@"
 endif
-	@$(ASM) -MD $(patsubst %.o,%.d,$@) $< -o $@ -I $(BOOTINCDIR) $(ASMFLAGS)
+	@$(ASM) -MD $(patsubst %.o,%.d,$@) $< -o $@ -I $(BOOTINCDIR) -I $(BOOTARCHINCDIR) $(ASMFLAGS)
 
 clean-bootloader:
 	@echo "    (MAKE)    Cleaning bootloader..."

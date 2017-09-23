@@ -1,3 +1,6 @@
 # Ignore binaries and object files
 build/
 .vscode/
+kernel/builld/
+bootloader/builld/
+mbr/builld/

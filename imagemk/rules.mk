@@ -7,7 +7,7 @@ clean-imagemk:
 	@rm -f $(IMAGEMKDIR)/obj/imagemk.o
 
 $(IMAGEMKDIR)/imagemk: $(IMAGEMKDIR)/obj/imagemk.o
-	@g++ -o $(IMAGEMKDIR)/imagemk $(IMAGEMKDIR)/obj/imagemk.o
+	@g++ -o $(IMAGEMKDIR)/imagemk $(IMAGEMKDIR)/obj/imagemk.o -std=c++14
 
 $(IMAGEMKDIR)/obj/imagemk.o: $(IMAGEMKDIR)/src/imagemk.cc
-	@g++ -c $^ -o $@
+	@g++ -c $^ -o $@ -std=c++14

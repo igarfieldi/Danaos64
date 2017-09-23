@@ -11,7 +11,7 @@
 .set			CODE_SEGMENT,			0x8
 .set			DATA_SEGMENT,			0x10
 
-.section		.text
+.section		.bootsector, "ax", @progbits
 
 _start:
 	// Disable interrupts
@@ -41,8 +41,8 @@ load_bootloader:
 	movb		3(%si), %ch								// Starting cylinder 0:7
 	movb		2(%si), %cl								// Starting sector + cylinder 8:9
 	addb		$1, %cl									// Increase sector by one because the first was loaded to begin with
-	movw		%ax, (boot_sector_end)
-	addw		%cx, (boot_sector_end)
+	movw		%cx, (boot_sector_end)					// Save where the kernel should begin (sector right afterwards)
+	addw		%ax, (boot_sector_end)
 	movb		1(%si), %dh								// Starting head
 	movw		(boot_drive), %dx						// Drive
 	movw		$(BOOTLOADER_START + SECTOR_SIZE), %bx	// Target address: since the first segment is already loaded, go one past
@@ -91,8 +91,6 @@ switch:
 	orl			$1, %eax
 	movl		%eax, %cr0
 	jmp			$CODE_SEGMENT, $protectedMode
-	
-.include		"screen.i"
 
 .code32
 protectedMode:

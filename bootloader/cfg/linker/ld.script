@@ -8,6 +8,8 @@ SECTIONS
 	/* Bootloader code */
 	.text :
 	{
+		*(.bootsector)
 		*(.text)
+		. = ALIGN(512);
 	}
 }

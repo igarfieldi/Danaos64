@@ -1,3 +1,8 @@
+.global		_printMsg, _printChar, _printNumber, _printNewline, _clearScreen
+
+.code16
+.section	.text
+
 .type		_printChar, @function
 _printChar:					// Print a single character	
 	mov		1, %cx			// Repeat count
@@ -16,7 +21,7 @@ _printMsg:					// Prints a string until it hits '\0'
 .printMsgEnd:
 	ret
 	
-.type		_printDec, @function
+.type		_printNumber, @function
 _printNumber:
 	xorw	%dx, %dx		// Zero-extend ax
 	movw	$10, %cx

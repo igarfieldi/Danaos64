@@ -1,6 +1,9 @@
 VPATH		+= src
 
-build-imagemk: $(IMAGEMKDIR)/imagemk
+dir-imagemk:
+	@mkdir -p $(IMAGEMKDIR)/obj
+
+build-imagemk: dir-imagemk $(IMAGEMKDIR)/imagemk
 
 clean-imagemk:
 	@rm -f $(IMAGEMKDIR)/imagemk

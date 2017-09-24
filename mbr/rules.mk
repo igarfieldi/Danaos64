@@ -15,7 +15,11 @@ MBRDEBUGSCRIPT	:= $(MBRDIR)/$(CFGDIR)/debug/gdb-$(ISA).script
 MBRDEP			:= $(patsubst %.o,%.d,$(MBROBJ))
 VPATH			+= $(dir $(MBRSRC))
 
-build-mbr: $(MBRBIN) $(MBRSYMBOLS)
+dir-mbr:
+	@mkdir -p $(MBRDIR)/$(BINDIR)
+	@mkdir -p $(MBRDIR)/$(OBJDIR)
+
+build-mbr: dir-mbr $(MBRBIN) $(MBRSYMBOLS)
 	@echo "    (MAKE)    Building MBR..."
 
 $(MBRSYMBOLS): $(MBRELF)

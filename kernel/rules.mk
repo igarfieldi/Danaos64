@@ -47,10 +47,13 @@ KERNELDEP			:= $(patsubst %.o,%.d,$(KERNELOBJ))
 VPATH				+= $(dir $(KERNELSRC))
 
 
-build-kernel: $(KERNELBIN) $(KERNELSYMBOLS)
+dir-kernel:
+	@mkdir -p $(KERNELDIR)/$(BINDIR)
+	@mkdir -p $(KERNELDIR)/$(OBJDIR)
+
+build-kernel: dir-kernel $(KERNELBIN) $(KERNELSYMBOLS)
 	@echo "    (MAKE)    Building kernel..."
 	
-
 $(KERNELSYMBOLS): $(KERNELELF)
 	@echo "    (OBJCOPY) Creating symbol file..."
 	@$(OBJCOPY) --only-keep-debug $(KERNELELF) $(KERNELSYMBOLS)

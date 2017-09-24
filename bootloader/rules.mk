@@ -17,7 +17,11 @@ BOOTDEBUGSCRIPT	:= $(BOOTDIR)/$(CFGDIR)/debug/gdb-$(ISA).script
 BOOTDEP			:= $(patsubst %.o,%.d,$(BOOTOBJ))
 VPATH			+= $(dir $(BOOTSRC))
 
-build-bootloader: $(BOOTBIN) $(BOOTSYMBOLS)
+dir-bootloader:
+	@mkdir -p $(BOOTDIR)/$(BINDIR)
+	@mkdir -p $(BOOTDIR)/$(OBJDIR)
+
+build-bootloader: dir-bootloader $(BOOTBIN) $(BOOTSYMBOLS)
 	@echo "    (MAKE)    Building bootloader..."
 
 $(BOOTSYMBOLS): $(BOOTELF)

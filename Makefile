@@ -81,7 +81,7 @@ build: dir build-mbr build-bootloader build-kernel build-imagemk
 clean: clean-bootloader clean-mbr clean-kernel clean-imagemk
 	@rm -rf $(BINDIR)/*
 
-dir:
+dir: dir-mbr dir-bootloader dir-kernel dir-imagemk
 	@mkdir -p $(BINDIR)
 	@mkdir -p $(MBRDIR)/$(BINDIR)
 	@mkdir -p $(MBRDIR)/$(OBJDIR)

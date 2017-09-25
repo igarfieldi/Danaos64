@@ -4,3 +4,5 @@ build/
 kernel/builld/
 bootloader/builld/
 mbr/builld/
+imagemk/obj/
+imagemk/imagemk

@@ -4,8 +4,7 @@ MBRSYMBOLS		:= $(MBRDIR)/$(BINDIR)/$(MBRNAME)-symbols.sym
 MBRBIN			:= $(MBRDIR)/$(BINDIR)/$(MBRNAME).bin
 MBRELF			:= $(MBRDIR)/$(BINDIR)/$(MBRNAME).elf
 MBRSRC			:= $(shell $(FIND) $(MBRDIR) -name "*.s")
-MBROBJ			:= $(notdir $(MBRSRC))
-MBROBJ			:= $(addprefix $(MBRDIR)/$(OBJDIR)/,$(MBROBJ))
+MBROBJ			:= $(patsubst $(MBRDIR)/$(SRCDIR)/%,$(MBRDIR)/$(OBJDIR)/%,$(MBRSRC))
 MBROBJ			:= $(subst .s,.o,$(MBROBJ))
 MBRINCDIR		:= $(MBRDIR)/$(SRCDIR)
 
@@ -13,7 +12,6 @@ MBRLDSCRIPT		:= $(MBRDIR)/$(CFGDIR)/linker/ld.script
 MBRDEBUGSCRIPT	:= $(MBRDIR)/$(CFGDIR)/debug/gdb-$(ISA).script
 
 MBRDEP			:= $(patsubst %.o,%.d,$(MBROBJ))
-VPATH			+= $(dir $(MBRSRC))
 
 dir-mbr:
 	@mkdir -p $(MBRDIR)/$(BINDIR)
@@ -44,10 +42,11 @@ endif
 -include $(MBRDEP)
 
 # Assembly rule
-$(MBRDIR)/$(OBJDIR)/%.o : %.s
+$(MBRDIR)/$(OBJDIR)/%.o : $(MBRDIR)/$(SRCDIR)/%.s
 ifdef VERBOSE
 	@echo "    (ASM)     $< --> $@"
 endif
+	@mkdir -p $(dir $@)
 	@$(ASM) -MD $(patsubst %.o,%.d,$@) $< -o $@ -I $(MBRINCDIR) $(ASMFLAGS)
 
 clean-mbr:

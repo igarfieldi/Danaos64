@@ -1,6 +1,5 @@
-/* Designate entry point of the kernel (located in boot.s) */
+/* Designate entry point of the bootloader (located in bootloader.s) */
 ENTRY(_start)
-/* Specify the output format */
 
 SECTIONS
 {
@@ -10,6 +9,16 @@ SECTIONS
 	{
 		*(.bootsector)
 		*(.text)
+		*(.data)
+		*(.eh_frame)
+		*(.rodata)
+		*(COMMON)
+		*(.bss)
 		. = ALIGN(512);
 	}
+	
+    /DISCARD/ :
+    {
+    	*(.comment)
+    }
 }

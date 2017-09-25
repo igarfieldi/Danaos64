@@ -3,19 +3,28 @@ BOOTNAME		:= bootloader
 BOOTSYMBOLS		:= $(BOOTDIR)/$(BINDIR)/$(BOOTNAME)-symbols.sym
 BOOTBIN			:= $(BOOTDIR)/$(BINDIR)/$(BOOTNAME).bin
 BOOTELF			:= $(BOOTDIR)/$(BINDIR)/$(BOOTNAME).elf
+BOOTIMG			:= $(BOOTDIR)/$(BINDIR)/$(BOOTNAME).img
 BOOTSRCDIR		:= $(BOOTDIR)/$(SRCDIR)
 BOOTSRC			:= $(shell $(FIND) $(BOOTSRCDIR) -name "*.s")
-BOOTOBJ			:= $(notdir $(BOOTSRC))
-BOOTOBJ			:= $(addprefix $(BOOTDIR)/$(OBJDIR)/,$(BOOTOBJ))
+BOOTSRC			+= $(shell $(FIND) $(BOOTSRCDIR) -name "*.cc")
+# Remove all files from the arch directory
+BOOTSRC			:= $(patsubst $(BOOTSRCDIR)/arch/%,,$(BOOTSRC))
+# Add the sources from the relevant arch directory again
+BOOTSRC			+= $(shell $(FIND) $(BOOTSRCDIR)/arch/$(ISA) -name "*.s")
+BOOTSRC			+= $(shell $(FIND) $(BOOTSRCDIR)/arch/$(ISA) -name "*.cc")
+BOOTOBJ			:= $(patsubst $(BOOTDIR)/$(SRCDIR)/%,$(BOOTDIR)/$(OBJDIR)/%,$(BOOTSRC))
 BOOTOBJ			:= $(subst .s,.o,$(BOOTOBJ))
+BOOTOBJ			:= $(subst .cc,.o,$(BOOTOBJ))
 BOOTINCDIR		:= $(BOOTSRCDIR)
 BOOTARCHINCDIR	:= $(BOOTSRCDIR)/arch/$(ISA)
+
+BOOTASMFLAGS	:= -ggdb
+BOOTCPPFLAGS	:= -ffreestanding -O0 -std=c++17 -fno-exceptions -fno-rtti -ggdb -Wall -Wextra -m32
 
 BOOTLDSCRIPT	:= $(BOOTDIR)/$(CFGDIR)/linker/ld.script
 BOOTDEBUGSCRIPT	:= $(BOOTDIR)/$(CFGDIR)/debug/gdb-$(ISA).script
 
 BOOTDEP			:= $(patsubst %.o,%.d,$(BOOTOBJ))
-VPATH			+= $(dir $(BOOTSRC))
 
 dir-bootloader:
 	@mkdir -p $(BOOTDIR)/$(BINDIR)
@@ -42,21 +51,36 @@ endif
 -include $(BOOTDEP)
 
 # Assembly rule
-$(BOOTDIR)/$(OBJDIR)/%.o : %.s
+$(BOOTDIR)/$(OBJDIR)/%.o : $(BOOTDIR)/$(SRCDIR)/%.s
 ifdef VERBOSE
 	@echo "    (ASM)     $< --> $@"
 endif
-	@$(ASM) -MD $(patsubst %.o,%.d,$@) $< -o $@ -I $(BOOTINCDIR) -I $(BOOTARCHINCDIR) $(ASMFLAGS)
+	@mkdir -p $(dir $@)
+	@$(ASM) -MD $(patsubst %.o,%.d,$@) $< -o $@ -I $(BOOTINCDIR) -I $(BOOTARCHINCDIR) $(BOOTASMFLAGS)
+
+# C++ rule
+$(BOOTDIR)/$(OBJDIR)/%.o : $(BOOTDIR)/$(SRCDIR)/%.cc Makefile
+ifdef VERBOSE
+	@echo "    (CC)      $< --> $@"
+endif
+	@mkdir -p $(dir $@)
+	@$(CPP) -MD -c $< -o $@ -I $(BOOTINCDIR) -I $(BOOTARCHINCDIR) $(BOOTCPPFLAGS)
 
 clean-bootloader:
 	@echo "    (MAKE)    Cleaning bootloader..."
 	@rm -rf $(BOOTDIR)/$(OBJDIR)/*
 	@rm -rf $(BOOTDIR)/$(BINDIR)/*
+	
+img-bootloader: $(BOOTIMG)
 
-debug-bootloader: build-bootloader
+$(BOOTIMG): build-bootloader build-imagemk
+	@$(IMAGEMK) -b $(BOOTBIN) 502 503 -s 512 $(BOOTIMG)
+
+debug-bootloader: $(BOOTIMG)
 	@echo "    (MAKE)    Debugging bootloader..."
-	@$(QEMU) $(QEMUFLAGS) -drive format=raw,file=$(BOOTBIN) -S -s -daemonize && $(GDB) $(BOOTSYMBOLS) -x $(BOOTDEBUGSCRIPT)
+	@$(QEMU) $(QEMUFLAGS) -drive format=raw,file=$(BOOTIMG) -S -s -daemonize && $(GDB) $(BOOTSYMBOLS) -x $(BOOTDEBUGSCRIPT)
 
-run-bootloader: build-bootloader
+run-bootloader: $(BOOTIMG)
 	@echo "    (MAKE)    Running bootloader..."
-	@$(QEMU) $(QEMUFLAGS) -drive format=raw,file=$(BOOTBIN)
+	@$(QEMU) $(QEMUFLAGS) -drive format=raw,file=$(BOOTIMG)
+

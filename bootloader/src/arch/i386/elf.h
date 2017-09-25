@@ -1,8 +1,7 @@
-#ifndef DANAOS_ELF_ELF_H_
-#define DANAOS_ELF_ELF_H_
+#ifndef DANAOS_BOOTLOADER_ARCH_I386_ELF_H_
+#define DANAOS_BOOTLOADER_ARCH_I386_ELF_H_
 
 #include <stdint.h>
-#include "boot/multiboot2.h"
 
 namespace elf {
 	using Elf32_Addr = uint32_t;
@@ -47,7 +46,7 @@ namespace elf {
 		
 		enum class version : Elf32_Word {
 			NONE			= 0,
-			CURRENT		= 1
+			CURRENT			= 1
 		};
 		
 		struct identification {
@@ -55,7 +54,7 @@ namespace elf {
 			file_class ei_class;
 			endian ei_data;
 			version ei_version;
-			unsigned char ei_pad[9];
+			unsigned char ei_pad[6];
 		} __attribute__((packed)) e_ident;
 		type e_type;
 		machine e_machine;
@@ -111,36 +110,6 @@ namespace elf {
         Elf32_Word sh_entsize;
     } __attribute__((packed));
     
-	enum class symbol_binding : unsigned char {
-		LOCAL			= 0,
-		GLOBAL			= 1,
-		WEAK			= 2,
-		LOPROC			= 13,
-		HIPROC			= 15
-	};
-	
-	enum class symbol_type : unsigned char {
-		NOTYPE			= 0,
-		OBJECT			= 1,
-		FUNC			= 2,
-		SECTION			= 3,
-		FILE			= 4,
-		LOPROC			= 13,
-		HIPROC			= 15
-	};
-	
-	struct symbol {
-        Elf32_Word st_name;
-        Elf32_Addr st_value;
-        Elf32_Word st_size;
-        struct info_t {
-        	symbol_type type		: 4;
-        	symbol_binding binding	: 4;
-        } __attribute__((packed)) st_info;
-        unsigned char st_other;
-        Elf32_Half st_shndx;
-    } __attribute__((packed));
-    
     struct program_header {
     	enum class type : Elf32_Word {
     		PH_NULL			= 0,
@@ -164,34 +133,17 @@ namespace elf {
 		Elf32_Word p_filesz;
 		Elf32_Word p_memsz;
 		struct permissions {
-			unsigned char execute		: 1;
-			unsigned char write			: 1;
-			unsigned char read			: 1;
-			unsigned char unspecified	: 5;
-			unsigned char padding[3];
+			Elf32_Word execute			: 1;
+			Elf32_Word write			: 1;
+			Elf32_Word read				: 1;
+			Elf32_Word unspecified		: 5;
+			Elf32_Word padding			: 24;
 		} __attribute__((packed)) p_flags;
 		Elf32_Word p_align;
     } __attribute__((packed));
-
-    class symbol_lookup {
-    private:
-        const symbol *symbolTable;
-        const char *stringTable;
-        Elf32_Word symbols;
-        Elf32_Word strings;
-    
-    public:
-        symbol_lookup();
-        
-        void init(const multiboot_tag_elf_sections *headers);
-    
-    	template < class R, class... Args >
-    	const char *lookup(R (*func)(Args...)) {
-    		return lookup(reinterpret_cast<uintptr_t>(func));
-    	}
-        const char *lookup(uintptr_t address);
-        void print_all();
-    };
 } // namespace elf
 
-#endif //DANAOS_ELF_ELF_H_
+
+extern "C" uintptr_t parse_elf(uintptr_t header_addr);
+
+#endif //DANAOS_BOOTLOADER_ARCH_I386_ELF_H_

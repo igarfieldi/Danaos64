@@ -1,9 +1,8 @@
 KERNELNAME			:= kernel
 
 KERNELSYMBOLS		:= $(KERNELDIR)/$(BINDIR)/$(KERNELNAME)-symbols.sym
-KERNELBIN			:= $(KERNELDIR)/$(BINDIR)/$(KERNELNAME)-no-debug.bin
 KERNELELF			:= $(KERNELDIR)/$(BINDIR)/$(KERNELNAME).elf
-KERNELELFSTRIPPED	:= $(KERNELDIR)/$(BINDIR)/$(KERNELNAME)-stripped.elf
+KERNELELFSTRIPPED	:= $(KERNELDIR)/$(BINDIR)/$(KERNELNAME)-nodebug.elf
 KERNELIMG			:= $(KERNELDIR)/$(BINDIR)/$(KERNELNAME).img
 KERNELINCDIR		:= $(KERNELDIR)/$(SRCDIR)
 
@@ -51,16 +50,12 @@ dir-kernel:
 	@mkdir -p $(KERNELDIR)/$(BINDIR)
 	@mkdir -p $(KERNELDIR)/$(OBJDIR)
 
-build-kernel: dir-kernel $(KERNELBIN) $(KERNELSYMBOLS)
+build-kernel: dir-kernel $(KERNELELFSTRIPPED) $(KERNELSYMBOLS)
 	@echo "    (MAKE)    Building kernel..."
 	
 $(KERNELSYMBOLS): $(KERNELELF)
 	@echo "    (OBJCOPY) Creating symbol file..."
 	@$(OBJCOPY) --only-keep-debug $(KERNELELF) $(KERNELSYMBOLS)
-	
-$(KERNELBIN): $(KERNELELFSTRIPPED)
-	@echo "    (OBJCOPY) Creating plain binary..."
-	@$(OBJCOPY) -O binary $(KERNELELFSTRIPPED) $(KERNELBIN)
 	
 $(KERNELELFSTRIPPED): $(KERNELELF)
 	@echo "    (OBJCOPY) Stripping debug info..."
@@ -69,7 +64,7 @@ $(KERNELELFSTRIPPED): $(KERNELELF)
 # The binary depends on the object files which have sources and the crti etc. files from gcc (the link order is important!)
 $(KERNELELF): $(KERNELCRTI) $(KERNELCRTBEGIN) $(KERNELOBJ) $(KERNELCRTEND) $(KERNELCRTN)
 	@echo "    (LD)      Linking..."
-	@$(LD) -o $(KERNELELF) -T $(KERNELLDSCRIPT) $(LDFLAGS) $^
+	@$(LD) -o $(KERNELELF) -T $(KERNELLDSCRIPT) $(TARGETLDFLAGS) $^
 
 # Include the dependency rules (if present; if not, we have to build the obj file anyway)
 -include $(KERNELDEP)
@@ -80,7 +75,7 @@ ifdef VERBOSE
 	@echo "    (ASM)     $< --> $@"
 endif
 	@mkdir -p $(dir $@)
-	@$(ASM) -MD $(patsubst %.o,%.d,$@) $< -o $@ -I $(KERNELINCDIR) -I $(KERNELARCHINC) $(ASMFLAGS)
+	@$(ASM) -MD $(patsubst %.o,%.d,$@) $< -o $@ -I $(KERNELINCDIR) -I $(KERNELARCHINC) $(TARGETASMFLAGS)
 
 # C rule
 $(KERNELDIR)/$(OBJDIR)/%.o : $(KERNELDIR)/$(SRCDIR)/%.c Makefile
@@ -88,7 +83,7 @@ ifdef VERBOSE
 	@echo "    (C)       $< --> $@"
 endif
 	@mkdir -p $(dir $@)
-	@$(CC) -MD -c $< -o $@ -I $(KERNELINCDIR) -I $(KERNELARCHINC) $(CCFLAGS)
+	@$(CC) -MD -c $< -o $@ -I $(KERNELINCDIR) -I $(KERNELARCHINC) $(TARGETCCFLAGS)
 
 # C++ rule
 $(KERNELDIR)/$(OBJDIR)/%.o : $(KERNELDIR)/$(SRCDIR)/%.cc Makefile
@@ -96,7 +91,7 @@ ifdef VERBOSE
 	@echo "    (CC)      $< --> $@"
 endif
 	@mkdir -p $(dir $@)
-	@$(CPP) -MD -c $< -o $@ -I $(KERNELINCDIR) -I $(KERNELARCHINC) $(CPPFLAGS)
+	@$(CPP) -MD -c $< -o $@ -I $(KERNELINCDIR) -I $(KERNELARCHINC) $(TARGETCPPFLAGS)
 
 clean-kernel:
 	@echo "    (MAKE)    Cleaning kernel..."

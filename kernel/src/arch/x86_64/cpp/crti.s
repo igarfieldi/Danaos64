@@ -23,3 +23,4 @@ _fini:
 	push %rbp
 	movq %rsp, %rbp
 	/* Content of .fini in crtbegin.o */
+

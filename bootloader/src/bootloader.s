@@ -4,10 +4,13 @@
 
 .set			BOOTLOADER_START,		0x7C00
 .set			BOOTLOADER_STACK,		0x0800
-.set			KERNEL_ADDR,			0x8000
-.set			KERNEL_SEGMENT,			0x0800
+.set			KERNEL_ADDR,			0x9000
+.set			KERNEL_SEGMENT,			0x0900
 .set			SECTOR_SIZE,			0x0200
 .set			SECTOR_SHIFT,			0x9
+.set			MAX_SECTORS,			64
+.set			SEGMENT_SIZE,			16
+.set			SEGMENT_INCREASE,		0x800
 .set			CODE_SEGMENT,			0x8
 .set			DATA_SEGMENT,			0x10
 
@@ -49,6 +52,8 @@ load_bootloader:
 	movb		$0x02, %ah								// BIOS interrupt number
 	int			$0x13
 	
+after_load:
+	
 	// Print infos (doesn't reside in the first sector for testing)
 	call		_clearScreen
 	movb		$7, %bl
@@ -68,18 +73,47 @@ load_bootloader:
 	call		_printNumber
 	call		_printNewline
 	
-	// Now load the kernel (for testing)
+before_kernel_load:
+	// Now load the kernel
 	movw		(boot_partition_entry), %si
-	movw		(kernel_sectors), %ax
 	movw		(boot_sector_end), %cx
 	movb		1(%si), %dh								// Starting head
 	movw		(boot_drive), %dx						// Drive
 	movw		$KERNEL_SEGMENT, %bx
 	movw		%bx, %es								// We need to switch segments
-	movw		$0x0, %bx								// Target address: since the first segment is already loaded, go one past
+	movw		$0x0, %bx
+	
+	// Load at most 64 sectors
+
+// TODO: fix that cylinder bits are weird and not proper for larger kernels!
+loop_kernel_load:
+	movw		(kernel_sectors), %ax
+	cmp			$MAX_SECTORS, %ax
+	jl			not_capped
+	movw		$MAX_SECTORS, %ax
+not_capped:
 	movb		$0x02, %ah								// BIOS interrupt number
 	int			$0x13
 	
+after_interrupt:
+	// Get the actually-read sector count
+	xor			%ah, %ah
+	subw		%ax, (kernel_sectors)
+	
+	// Check if more sectors need to be read
+	cmp			$0, (kernel_sectors)
+	je			after_kernel_load
+	// Increase the sector position
+	addw		%ax, %cx
+	// Increase the memory location
+	movw		%es, %bx
+	addw		$SEGMENT_INCREASE, %bx
+	movw		%bx, %es
+	movw		$0x0, %bx
+	jmp			loop_kernel_load
+	
+after_kernel_load:
+	// Restore proper segment
 	movw		$0x0, %bx
 	movw		%bx, %es
 
@@ -100,15 +134,17 @@ protectedMode:
 	movw		%ax, %fs
 	movw		%ax, %gs
 	movw		%ax, %ss
+	
 
-	// Copy the kernel from where we loaded it to where it is supposed to go
-	movl		$KERNEL_ADDR, %esi
-	movl		(kernel_entry), %edi
-	movl		(kernel_sectors), %eax
-	movl		$SECTOR_SIZE, %ecx
-	mull		%ecx
-	movl		%eax, %ecx
-	rep			movsb
+elf:
+	// Parse the ELF file to properly load the kernel
+	push		$KERNEL_ADDR
+	call		parse_elf
+	addl		$4, %esp
+	movl		%eax, (kernel_entry)
+	
+	cmp			$0, %eax
+	je			.hang
 
 jump_kernel:
 	movl		(kernel_entry), %edi
@@ -159,13 +195,17 @@ codeseg:
 	.byte		0
 gdt_end:
 
-.fill			512 - 10 - (. - _start), 1, 0
+kernel_entry:
+	.int		0
+kernel_phys:
+	.int		0x100000
+
+.fill			512 - 6 - (. - _start), 1, 0
 bootloader_sectors:
-	.word		0x01
+	.word		0x04
 kernel_sectors:
 	.word		0x78								// Kernel size gets written here by IMG builder
-kernel_entry:
-	.int		0x100000
 boot_signature:
-	.byte			0x55
-	.byte			0xAA
+	.byte		0x55
+	.byte		0xAA
+

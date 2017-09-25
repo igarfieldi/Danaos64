@@ -6,25 +6,27 @@ BOOTELF			:= $(BOOTDIR)/$(BINDIR)/$(BOOTNAME).elf
 BOOTIMG			:= $(BOOTDIR)/$(BINDIR)/$(BOOTNAME).img
 BOOTSRCDIR		:= $(BOOTDIR)/$(SRCDIR)
 BOOTSRC			:= $(shell $(FIND) $(BOOTSRCDIR) -name "*.s")
+BOOTSRC			+= $(shell $(FIND) $(BOOTSRCDIR) -name "*.c")
 BOOTSRC			+= $(shell $(FIND) $(BOOTSRCDIR) -name "*.cc")
 # Remove all files from the arch directory
 BOOTSRC			:= $(patsubst $(BOOTSRCDIR)/arch/%,,$(BOOTSRC))
 # Add the sources from the relevant arch directory again
 BOOTSRC			+= $(shell $(FIND) $(BOOTSRCDIR)/arch/$(ISA) -name "*.s")
+BOOTSRC			+= $(shell $(FIND) $(BOOTSRCDIR)/arch/$(ISA) -name "*.c")
 BOOTSRC			+= $(shell $(FIND) $(BOOTSRCDIR)/arch/$(ISA) -name "*.cc")
 BOOTOBJ			:= $(patsubst $(BOOTDIR)/$(SRCDIR)/%,$(BOOTDIR)/$(OBJDIR)/%,$(BOOTSRC))
 BOOTOBJ			:= $(subst .s,.o,$(BOOTOBJ))
 BOOTOBJ			:= $(subst .cc,.o,$(BOOTOBJ))
+BOOTOBJ			:= $(subst .c,.o,$(BOOTOBJ))
 BOOTINCDIR		:= $(BOOTSRCDIR)
 BOOTARCHINCDIR	:= $(BOOTSRCDIR)/arch/$(ISA)
-
-BOOTASMFLAGS	:= -ggdb
-BOOTCPPFLAGS	:= -ffreestanding -O0 -std=c++17 -fno-exceptions -fno-rtti -ggdb -Wall -Wextra -m32
 
 BOOTLDSCRIPT	:= $(BOOTDIR)/$(CFGDIR)/linker/ld.script
 BOOTDEBUGSCRIPT	:= $(BOOTDIR)/$(CFGDIR)/debug/gdb-$(ISA).script
 
 BOOTDEP			:= $(patsubst %.o,%.d,$(BOOTOBJ))
+
+# TODO: properly configure this makefile!
 
 dir-bootloader:
 	@mkdir -p $(BOOTDIR)/$(BINDIR)
@@ -35,17 +37,17 @@ build-bootloader: dir-bootloader $(BOOTBIN) $(BOOTSYMBOLS)
 
 $(BOOTSYMBOLS): $(BOOTELF)
 	@echo "    (OBJCOPY) Creating symbol file..."
-	@$(OBJCOPY) --only-keep-debug $(BOOTELF) $(BOOTSYMBOLS)
+	@i386-elf-objcopy --only-keep-debug $(BOOTELF) $(BOOTSYMBOLS)
 
 $(BOOTBIN): $(BOOTELF)
 	@echo "    (OBJCOPY) Stripping debug info..."
-	@$(OBJCOPY) -O binary --strip-all $(BOOTELF) $(BOOTBIN)
+	@i386-elf-objcopy -O binary --strip-all $(BOOTELF) $(BOOTBIN)
 
 $(BOOTELF): $(BOOTOBJ)
 ifdef VERBOSE
 	@echo "    (LD)      Linking..."
 endif
-	@$(LD) -T $(BOOTLDSCRIPT) -o $(BOOTELF) $(LDFLAGS) $^
+	@i386-elf-g++ -T $(BOOTLDSCRIPT) -o $(BOOTELF) $(LDFLAGS) $(i386-LDFLAGS) $^
 
 # Include the dependency rules (if present; if not, we have to build the obj file anyway)
 -include $(BOOTDEP)
@@ -56,7 +58,15 @@ ifdef VERBOSE
 	@echo "    (ASM)     $< --> $@"
 endif
 	@mkdir -p $(dir $@)
-	@$(ASM) -MD $(patsubst %.o,%.d,$@) $< -o $@ -I $(BOOTINCDIR) -I $(BOOTARCHINCDIR) $(BOOTASMFLAGS)
+	@i386-elf-as -MD $(patsubst %.o,%.d,$@) $< -o $@ -I $(BOOTINCDIR) -I $(BOOTARCHINCDIR) $(ASMFLAGS) $(i386-ASMFLAGS)
+
+# C rule
+$(BOOTDIR)/$(OBJDIR)/%.o : $(BOOTDIR)/$(SRCDIR)/%.c Makefile
+ifdef VERBOSE
+	@echo "    (C)       $< --> $@"
+endif
+	@mkdir -p $(dir $@)
+	@i386-elf-gcc -MD -c $< -o $@ -I $(BOOTINCDIR) -I $(BOOTARCHINCDIR) $(CCFLAGS) $(i386-CCFLAGS)
 
 # C++ rule
 $(BOOTDIR)/$(OBJDIR)/%.o : $(BOOTDIR)/$(SRCDIR)/%.cc Makefile
@@ -64,7 +74,7 @@ ifdef VERBOSE
 	@echo "    (CC)      $< --> $@"
 endif
 	@mkdir -p $(dir $@)
-	@$(CPP) -MD -c $< -o $@ -I $(BOOTINCDIR) -I $(BOOTARCHINCDIR) $(BOOTCPPFLAGS)
+	@i386-elf-g++ -MD -c $< -o $@ -I $(BOOTINCDIR) -I $(BOOTARCHINCDIR) $(CPPFLAGS) $(i386-CPPFLAGS)
 
 clean-bootloader:
 	@echo "    (MAKE)    Cleaning bootloader..."
@@ -73,8 +83,8 @@ clean-bootloader:
 	
 img-bootloader: $(BOOTIMG)
 
-$(BOOTIMG): build-bootloader build-imagemk
-	@$(IMAGEMK) -b $(BOOTBIN) 502 503 -s 512 $(BOOTIMG)
+$(BOOTIMG): build-bootloader build-mbr build-imagemk
+	@$(IMAGEMK) -m $(MBRBIN) -b $(BOOTBIN) 506 507 -s 512 $(BOOTIMG)
 
 debug-bootloader: $(BOOTIMG)
 	@echo "    (MAKE)    Debugging bootloader..."

@@ -30,12 +30,7 @@ ifeq ($(or $(filter CUSTOM,$(LOADER)),$(filter GRUB2,$(LOADER))),)
     $(error '$(LOADER)' is not a supported bootloader)
 endif
 
-
 TARGET			:= $(ISA)-elf
-
-# Include the configuration for the current OS and the target ISA
-#include cfg/make/$(HOST)_config.mk
-#include cfg/make/ISA/$(ISA).mk
 
 SRCDIR			:= src
 OBJDIR			:= build/$(ISA)/obj
@@ -56,18 +51,24 @@ ifeq ($(LOADER),GRUB2)
 	TARGETIMG	:= $(IMGGRUB)
 endif
 
-CCFLAGS			+= -ffreestanding -O0 -std=C11 -ggdb -Wall -Wextra
+# Include the configuration for the current OS and the target ISA
+include	$(CFGDIR)/make/$(HOST)_config.mk
+include	$(CFGDIR)/make/flags/isa_flags.mk
+
+CCFLAGS			+= -ffreestanding -O0 -std=c11 -ggdb -Wall -Wextra
 CPPFLAGS		+= -ffreestanding -O0 -std=c++17 -fno-exceptions -fno-rtti -ggdb -Wall -Wextra
 ASMFLAGS		+= -ggdb
 LDFLAGS			+= -ffreestanding -O0 -nostdlib -std=c++17 -lgcc --disable-__cxa_atexit -ggdb
+TARGETCCFLAGS	:= $(CCFLAGS) $($(ISA)-CCFLAGS)
+TARGETCPPFLAGS	:= $(CPPFLAGS) $($(ISA)-CPPFLAGS)
+TARGETASMFLAGS	:= $(ASMFLAGS) $($(ISA)-ASMFLAGS)
+TARGETLDFLAGS	:= $(LDFLAGS) $($(ISA)-LDFLAGS)
 QEMUFLAGS		+= -no-kvm -net none -vga std -m 64 -serial file:serial.log
-
-include	$(CFGDIR)/make/$(HOST)_config.mk
-include	$(CFGDIR)/make/ISA/$(ISA).mk
 
 DEBUGSCRIPT		:= $(CFGDIR)/debug/gdb-$(ISA).script
 
 .PHONY: all build-all clean clean-mbr clean-bootloader clean-kernel build-mbr build-bootloader build-kernel
+
 
 all: build
 
@@ -94,8 +95,8 @@ dir: dir-mbr dir-bootloader dir-kernel dir-imagemk
 # TODO: differentiate between HDD, CD etc.!
 img: $(TARGETIMG)
 
-$(IMGCUSTOM): build
-	@$(IMAGEMK) -m $(MBRBIN) -b $(BOOTBIN) 502 503 -k $(KERNELBIN) 504 505 -s 512 $(IMGCUSTOM)
+$(IMGCUSTOM): build $(MBRBIN) $(BOOTBIN) $(KERNELELFSTRIPPED) $(IMAGEMK)
+	@$(IMAGEMK) -m $(MBRBIN) -b $(BOOTBIN) 506 507 -k $(KERNELELFSTRIPPED) 508 509 -s 512 $(IMGCUSTOM)
 
 $(IMGGRUB): $(KERNELIMG)
 	@$(CP) -f $(KERNELIMG) $(IMGGRUB)

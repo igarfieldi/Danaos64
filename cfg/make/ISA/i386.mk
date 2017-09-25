@@ -1,4 +1,0 @@
-CCFLAGS		+= -m32
-CPPFLAGS	+= -m32
-ASMFLAGS	+= --32
-LDFLAGS		+= -m32

@@ -1,5 +1,6 @@
 /* Designate entry point of the bootloader (located in bootloader.s) */
 ENTRY(_start)
+OUTPUT_FORMAT(elf32-i386)
 
 SECTIONS
 {

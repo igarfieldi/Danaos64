@@ -148,6 +148,38 @@ namespace elf {
         Elf64_Addr st_value;
         Elf64_Xword st_size;
     } __attribute__((packed));
+    
+    struct program_header {
+    	enum class type : Elf64_Word {
+    		PH_NULL			= 0,
+    		LOAD			= 1,
+    		DYNAMIC			= 2,
+    		INTERP			= 3,
+    		NOTE			= 4,
+    		SHLIB			= 5,
+    		PHDR			= 6,
+    		TLS				= 7,
+    		LOOS			= 0x60000000,
+    		HIOS			= 0x6FFFFFFF,
+    		LOPROC			= 0x70000000,
+    		HIPROC			= 0x7FFFFFFF
+    	};
+		
+		type p_type;
+		struct permissions {
+			Elf64_Word execute			: 1;
+			Elf64_Word write			: 1;
+			Elf64_Word read				: 1;
+			Elf64_Word unspecified		: 5;
+			Elf64_Word padding			: 24;
+		} __attribute__((packed)) p_flags;
+		Elf64_Off p_offset;
+		Elf64_Addr p_vaddr;
+		Elf64_Addr p_paddr;
+		Elf64_Xword p_filesz;
+		Elf64_Xword p_memsz;
+		Elf64_Xword p_align;
+    } __attribute__((packed));
 
     class symbol_lookup {
     private:

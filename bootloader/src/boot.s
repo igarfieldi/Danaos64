@@ -4,12 +4,14 @@
 .global			drive_parameters
 
 .set			BOOTLOADER_START,		0x7C00
-.set			BOOTLOADER_STACK,		0x0800
+.set			BOOTLOADER_STACK,		0x7C00
 .set			KERNEL_TEMP_ADDR,		0x9000
 .set			KERNEL_TEMP_SEGMENT,	0x0900
+.set			KERNEL_COPY_ADDR,		0x1000000
 .set			SEGMENT_SIZE,			16
 .set			CODE_SEGMENT,			0x8
 .set			DATA_SEGMENT,			0x10
+.set			UNREAL_DATA_SEGMENT,	0x8
 
 .set			MULTIBOOT2_MAGIC,		0x36D76289
 
@@ -30,6 +32,26 @@ _start:
 	// Save the info passed by the MBR
 	movw		%dx, (boot_drive)
 	movw		%si, (boot_partition_entry)
+	
+	// Go to unreal mode (TODO: is this really needed?)
+	push		%ds
+	push		%es
+	lgdt		(unreal_gdt_descriptor)				// Load the rudimentary GDT
+	movl		%cr0, %eax							// Enable protected mode by setting the bit
+	orl			$1, %eax
+	movl		%eax, %cr0
+	jmp			unreal_mode							// Jump for i386/i486 (TODO: is that really needed?)
+unreal_mode:
+	movw		$UNREAL_DATA_SEGMENT, %bx			// Set the right data segment descriptor index
+	movw		%bx, %ds
+	movw		%bx, %es
+	
+	// Back to real mode
+	andb		$0xFE, %al
+	movl		%eax, %cr0
+	pop			%es
+	pop			%ds
+	
 
 	// Enable interrupts since we need them
 	sti
@@ -120,6 +142,27 @@ drive_bytes_per_sector:
 	.int		0					// Pointer to EDD (not used)
 .drive_parameters_end:
 
+// Used to get unreal mode (only needs data segment since we won't exceed 64k until we stay in actual protected mode)
+unreal_gdt_descriptor:
+	.word		unreal_gdt_end - unreal_gdt - 1
+	.int		unreal_gdt
+unreal_gdt:
+	// Null segment
+	.word		0
+	.word		0
+	.byte		0
+	.byte		0
+	.byte		0
+	.byte		0
+	// Data segment
+	.word		0xFFFF
+	.word		0
+	.byte		0
+	.byte		0x92
+	.byte		0xCF
+	.byte		0
+unreal_gdt_end:
+
 msg_read_failure:	.asciz "Failed to read media: "
 
 // We're gonna waste some space, but guarantee that we don't overwrite any code
@@ -164,6 +207,7 @@ before_kernel_load:
 	movw		$KERNEL_TEMP_SEGMENT, %bx
 	movw		%bx, %es								// We need to switch segments
 	movw		$0x0, %bx
+	movl		$KERNEL_COPY_ADDR, %edi
 	
 	// Load at most as many sectors at a time as there are per track
 
@@ -177,7 +221,31 @@ loop_kernel_load:
 	int			$0x13
 	jc			.read_failure
 	
-after_interrupt:
+	// Copy the kernel to where it is supposed to go
+	// Save used registers
+	push		%ax
+	push		%cx
+	push		%dx
+	push		%ds
+	push		%es
+	
+	movw		(drive_bytes_per_sector), %cx			// Get the number of bytes that should be copied
+	mulw		%cx										// AX still contains the sectors copied
+	movw		%ax, %cx
+	xorw		%dx, %dx
+	movw		%dx, %ds								// Clear the segment registers since we'll use the unreal mode 32 bit addressing
+	movw		%dx, %es
+	movl		$KERNEL_TEMP_ADDR, %esi					// Re-set the source index
+	addr32 rep	movsb									// Copy the bytes; the operand prefix is important so that EDI/ESI will be used
+	
+	// Restore used registers
+	pop			%es
+	pop			%ds
+	pop			%dx
+	pop			%cx
+	pop			%ax
+	
+	
 	// Get the actually-read sector count
 	xor			%ah, %ah
 	subw		%ax, (kernel_sectors)
@@ -189,20 +257,8 @@ after_interrupt:
 	movw		$drive_sector_count, %si
 	push		%ax
 	call		_update_chs
-	// Increase the memory location
+	
 	pop			%ax
-	movw		(drive_bytes_per_sector), %bx
-	push		%dx
-bm:
-	mulw		%bx								// Multiply with the sector size to translate to bytes
-	xorw		%dx, %dx						// Clear any excess bytes from the multiplication
-	movw		$SEGMENT_SIZE, %bx
-	divw		%bx								// Divide by segment size (16)
-	movw		%es, %bx						// Load the old segment and increase it
-	addw		%ax, %bx
-	movw		%bx, %es
-	xorw		%bx, %bx
-	pop			%dx								// Restore the boot drive
 	jmp			loop_kernel_load
 	
 after_kernel_load:
@@ -231,7 +287,7 @@ protectedMode:
 
 elf:
 	// Parse the ELF file to properly load the kernel
-	push		$KERNEL_TEMP_ADDR
+	push		$KERNEL_COPY_ADDR
 	call		parse_elf
 	addl		$4, %esp
 	movl		%eax, (kernel_entry)
@@ -250,11 +306,7 @@ jump_kernel:
 	cli
 	hlt
 	jmp			.hang32
-
-msg_boot_drive:		.asciz "Boot drive: "
-msg_boot_part:		.asciz "Boot partition: "
-msg_loader_size:	.asciz "Bootloader size: "
-
+	
 gdt_descriptor:
 	.word		gdt_end - gdt - 1
 	.int		gdt
@@ -282,6 +334,10 @@ codeseg:
 	.byte		0xCF
 	.byte		0
 gdt_end:
+
+msg_boot_drive:		.asciz "Boot drive: "
+msg_boot_part:		.asciz "Boot partition: "
+msg_loader_size:	.asciz "Bootloader size: "
 
 kernel_entry:
 	.int		0

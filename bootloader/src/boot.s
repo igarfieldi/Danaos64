@@ -1,18 +1,17 @@
 .code16
 
 .global			_start
+.global			drive_parameters
 
 .set			BOOTLOADER_START,		0x7C00
 .set			BOOTLOADER_STACK,		0x0800
-.set			KERNEL_ADDR,			0x9000
-.set			KERNEL_SEGMENT,			0x0900
-.set			SECTOR_SIZE,			0x0200
-.set			SECTOR_SHIFT,			0x9
-.set			MAX_SECTORS,			64
+.set			KERNEL_TEMP_ADDR,		0x9000
+.set			KERNEL_TEMP_SEGMENT,	0x0900
 .set			SEGMENT_SIZE,			16
-.set			SEGMENT_INCREASE,		0x800
 .set			CODE_SEGMENT,			0x8
 .set			DATA_SEGMENT,			0x10
+
+.set			MULTIBOOT2_MAGIC,		0x36D76289
 
 .section		.bootsector, "ax", @progbits
 
@@ -31,6 +30,9 @@ _start:
 	// Save the info passed by the MBR
 	movw		%dx, (boot_drive)
 	movw		%si, (boot_partition_entry)
+
+	// Enable interrupts since we need them
+	sti
 	
 	// Query the BIOS for disk information (CHS)
 	movb		$0x08, %ah
@@ -42,11 +44,15 @@ _start:
 	andb		$0xC0, (drive_cylinder_count_high)
 	movb		%cl, (drive_sector_count)
 	andb		$0x7F, (drive_sector_count)
+
+	// Query the BIOS for more information (mainly the number of bytes per sector)
+	movb		$0x48, %ah
+	movw		(boot_drive), %dx
+	movw		$drive_parameters, %si
+	int			$0x13
+	jc			.read_failure
 	
-
 load_bootloader:
-	sti
-
 	// Load the sectors from the boot drive
 	movw		(bootloader_sectors), %ax
 	subw		$1, %ax
@@ -57,31 +63,96 @@ load_bootloader:
 	addw		%ax, (boot_sector_end)
 	movb		1(%si), %dh								// Starting head
 	movw		(boot_drive), %dx						// Drive
-	movw		$(BOOTLOADER_START + SECTOR_SIZE), %bx	// Target address: since the first segment is already loaded, go one past
+	movw		$BOOTLOADER_START, %bx					// Target address
+	addw		(drive_bytes_per_sector), %bx			// since the first segment is already loaded, go one past
 	movb		$0x02, %ah								// BIOS interrupt number
-	int			$0x13
+	int			$0x13									// Warning: we rely on all sectors to be read at once!
 	jc			.read_failure
+
+	jmp			show_info
+
+.read_failure:
+	push		%ax
+	movb		$7, %bl
+	movw		$msg_read_failure, %si
+	call		_print_msg
+	pop			%ax
 	
-after_load:
+	movb		%ah, %al
+	xorb		%ah, %ah
+	call		_print_number
 	
+.hang16:
+	cli
+	hlt
+	jmp			.hang16
+
+// Some stuff that needs to be in the first sector
+boot_partition_entry:
+	.word		0
+boot_drive:
+	.word		0
+boot_sector_end:
+	.word		0
+
+drive_sector_count:
+	.byte		0
+drive_cylinder_count_low:
+	.byte		0
+drive_cylinder_count_high:
+	.byte		0
+drive_head_count:
+	.byte		0
+
+drive_parameters:
+	.word		.drive_parameters_end - drive_parameters
+drive_info_flags:
+	.word		0
+drive_phys_cylinders:
+	.int		0
+drive_phys_heads:
+	.int		0
+drive_phys_sectors:
+	.int		0
+drive_phys_sectors_total:
+	.quad		0
+drive_bytes_per_sector:
+	.word		0
+	.int		0					// Pointer to EDD (not used)
+.drive_parameters_end:
+
+msg_read_failure:	.asciz "Failed to read media: "
+
+// We're gonna waste some space, but guarantee that we don't overwrite any code
+.fill			512 - 6 - (. - _start), 1, 0
+bootloader_sectors:
+	.word		0
+kernel_sectors:
+	.word		0								// Kernel size gets written here by IMG builder
+boot_signature:
+	.byte		0x55
+	.byte		0xAA
+
+// Beginning of second sector
+show_info:
 	// Print infos
-	call		_clearScreen
+	call		_clear_screen
 	movb		$7, %bl
 	movw		$msg_loader_size, %si
-	call		_printMsg
+	call		_print_msg
 	movw		(bootloader_sectors), %ax
-	call		_printNumber
-	call		_printNewline
+	call		_print_number
+	call		_print_newline
 	movw		$msg_boot_drive, %si
-	call		_printMsg
+	call		_print_msg
 	movw		(boot_drive), %ax
-	call		_printNumber
-	call		_printNewline
+	call		_print_number
+	call		_print_newline
 	movw		$msg_boot_part, %si
-	call		_printMsg
+	call		_print_msg
 	movw		(boot_partition_entry), %ax
-	call		_printNumber
-	call		_printNewline
+	call		_print_number
+	call		_print_newline
 	
 before_kernel_load:
 	// Now load the kernel
@@ -89,19 +160,18 @@ before_kernel_load:
 	movw		(boot_sector_end), %cx
 	movb		1(%si), %dh								// Starting head
 	movw		(boot_drive), %dx						// Drive
-	movw		$KERNEL_SEGMENT, %bx
+	movw		$KERNEL_TEMP_SEGMENT, %bx
 	movw		%bx, %es								// We need to switch segments
 	movw		$0x0, %bx
 	
-	// Load at most 64 sectors
+	// Load at most as many sectors at a time as there are per track
 
-// TODO: fix that cylinder bits are weird and not proper for larger kernels!
 loop_kernel_load:
 	movw		(kernel_sectors), %ax
-	cmp			$MAX_SECTORS, %ax
-	jl			not_capped
-	movw		$MAX_SECTORS, %ax
-not_capped:
+	cmp			(drive_sector_count), %ax
+	jl			.not_capped								// Ensure that we request 1 track at a time
+	movw		(drive_sector_count), %ax
+.not_capped:
 	movb		$0x02, %ah								// BIOS interrupt number
 	int			$0x13
 	jc			.read_failure
@@ -116,12 +186,22 @@ after_interrupt:
 	je			after_kernel_load
 	// Update the sector and cylinder stuff
 	movw		$drive_sector_count, %si
-	call		_updateCHS
+	push		%ax
+	call		_update_chs
 	// Increase the memory location
-	movw		%es, %bx
-	addw		$SEGMENT_INCREASE, %bx
+	pop			%ax
+	movw		(drive_bytes_per_sector), %bx
+	push		%dx
+bm:
+	mulw		%bx								// Multiply with the sector size to translate to bytes
+	xorw		%dx, %dx						// Clear any excess bytes from the multiplication
+	movw		$SEGMENT_SIZE, %bx
+	divw		%bx								// Divide by segment size (16)
+	movw		%es, %bx						// Load the old segment and increase it
+	addw		%ax, %bx
 	movw		%bx, %es
-	movw		$0x0, %bx
+	xorw		%bx, %bx
+	pop			%dx								// Restore the boot drive
 	jmp			loop_kernel_load
 	
 after_kernel_load:
@@ -137,25 +217,6 @@ switch:
 	orl			$1, %eax
 	movl		%eax, %cr0
 	jmp			$CODE_SEGMENT, $protectedMode
-	
-.read_failure:
-	push		%ax
-	movb		$0x8, %ah
-	int			$0x13
-after_test:
-	movb		$7, %bl
-	movw		$msg_read_failure, %si
-	call		_printMsg
-	pop			%ax
-	
-	movb		%ah, %al
-	xorb		%ah, %ah
-	call		_printNumber
-	
-.hang16:
-	cli
-	hlt
-	jmp			.hang16
 
 .code32
 protectedMode:
@@ -169,7 +230,7 @@ protectedMode:
 
 elf:
 	// Parse the ELF file to properly load the kernel
-	push		$KERNEL_ADDR
+	push		$KERNEL_TEMP_ADDR
 	call		parse_elf
 	addl		$4, %esp
 	movl		%eax, (kernel_entry)
@@ -179,6 +240,8 @@ elf:
 
 jump_kernel:
 	movl		(kernel_entry), %edi
+	movl		$MULTIBOOT2_MAGIC, %eax
+	movl		$0, %ebx
 	// Jump to the kernel
 	jmp			*%edi
 	
@@ -187,17 +250,9 @@ jump_kernel:
 	hlt
 	jmp			.hang32
 
-boot_partition_entry:
-	.word		0
-boot_drive:
-	.word		0
-boot_sector_end:
-	.word		0
-
 msg_boot_drive:		.asciz "Boot drive: "
 msg_boot_part:		.asciz "Boot partition: "
 msg_loader_size:	.asciz "Bootloader size: "
-msg_read_failure:	.asciz "Failed to read media: "
 
 gdt_descriptor:
 	.word		gdt_end - gdt - 1
@@ -227,26 +282,7 @@ codeseg:
 	.byte		0
 gdt_end:
 
-drive_sector_count:
-	.byte		0
-drive_cylinder_count_low:
-	.byte		0
-drive_cylinder_count_high:
-	.byte		0
-drive_head_count:
-	.byte		0
-
 kernel_entry:
 	.int		0
 kernel_phys:
 	.int		0x100000
-
-.fill			512 - 6 - (. - _start), 1, 0
-bootloader_sectors:
-	.word		0x04
-kernel_sectors:
-	.word		0x78								// Kernel size gets written here by IMG builder
-boot_signature:
-	.byte		0x55
-	.byte		0xAA
-

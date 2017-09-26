@@ -73,7 +73,6 @@ load_bootloader:
 
 .read_failure:
 	push		%ax
-	movb		$7, %bl
 	movw		$msg_read_failure, %si
 	call		_print_msg
 	pop			%ax
@@ -137,7 +136,6 @@ boot_signature:
 show_info:
 	// Print infos
 	call		_clear_screen
-	movb		$7, %bl
 	movw		$msg_loader_size, %si
 	call		_print_msg
 	movw		(bootloader_sectors), %ax
@@ -153,6 +151,9 @@ show_info:
 	movw		(boot_partition_entry), %ax
 	call		_print_number
 	call		_print_newline
+	
+	// Enable the A20 line (if it isn't done already)
+	call		_enable_a20
 	
 before_kernel_load:
 	// Now load the kernel

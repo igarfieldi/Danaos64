@@ -32,13 +32,22 @@ _start:
 	movw		%dx, (boot_drive)
 	movw		%si, (boot_partition_entry)
 	
-	// TODO: relocation!
+	// Query the BIOS for disk information (CHS)
+	movb		$0x08, %ah
+	int			$0x13
+	jc			.read_failure
+	movb		%dh, (drive_head_count)
+	movb		%ch, (drive_cylinder_count_low)
+	movb		%cl, (drive_cylinder_count_high)
+	andb		$0xC0, (drive_cylinder_count_high)
+	movb		%cl, (drive_sector_count)
+	andb		$0x7F, (drive_sector_count)
+	
 
 load_bootloader:
 	sti
 
 	// Load the sectors from the boot drive
-	
 	movw		(bootloader_sectors), %ax
 	subw		$1, %ax
 	movb		3(%si), %ch								// Starting cylinder 0:7
@@ -51,10 +60,11 @@ load_bootloader:
 	movw		$(BOOTLOADER_START + SECTOR_SIZE), %bx	// Target address: since the first segment is already loaded, go one past
 	movb		$0x02, %ah								// BIOS interrupt number
 	int			$0x13
+	jc			.read_failure
 	
 after_load:
 	
-	// Print infos (doesn't reside in the first sector for testing)
+	// Print infos
 	call		_clearScreen
 	movb		$7, %bl
 	movw		$msg_loader_size, %si
@@ -94,6 +104,7 @@ loop_kernel_load:
 not_capped:
 	movb		$0x02, %ah								// BIOS interrupt number
 	int			$0x13
+	jc			.read_failure
 	
 after_interrupt:
 	// Get the actually-read sector count
@@ -103,8 +114,9 @@ after_interrupt:
 	// Check if more sectors need to be read
 	cmp			$0, (kernel_sectors)
 	je			after_kernel_load
-	// Increase the sector position
-	addw		%ax, %cx
+	// Update the sector and cylinder stuff
+	movw		$drive_sector_count, %si
+	call		_updateCHS
 	// Increase the memory location
 	movw		%es, %bx
 	addw		$SEGMENT_INCREASE, %bx
@@ -125,6 +137,25 @@ switch:
 	orl			$1, %eax
 	movl		%eax, %cr0
 	jmp			$CODE_SEGMENT, $protectedMode
+	
+.read_failure:
+	push		%ax
+	movb		$0x8, %ah
+	int			$0x13
+after_test:
+	movb		$7, %bl
+	movw		$msg_read_failure, %si
+	call		_printMsg
+	pop			%ax
+	
+	movb		%ah, %al
+	xorb		%ah, %ah
+	call		_printNumber
+	
+.hang16:
+	cli
+	hlt
+	jmp			.hang16
 
 .code32
 protectedMode:
@@ -144,17 +175,17 @@ elf:
 	movl		%eax, (kernel_entry)
 	
 	cmp			$0, %eax
-	je			.hang
+	je			.hang32
 
 jump_kernel:
 	movl		(kernel_entry), %edi
 	// Jump to the kernel
 	jmp			*%edi
 	
-.hang:
+.hang32:
 	cli
 	hlt
-	jmp			.hang
+	jmp			.hang32
 
 boot_partition_entry:
 	.word		0
@@ -166,6 +197,7 @@ boot_sector_end:
 msg_boot_drive:		.asciz "Boot drive: "
 msg_boot_part:		.asciz "Boot partition: "
 msg_loader_size:	.asciz "Bootloader size: "
+msg_read_failure:	.asciz "Failed to read media: "
 
 gdt_descriptor:
 	.word		gdt_end - gdt - 1
@@ -194,6 +226,15 @@ codeseg:
 	.byte		0xCF
 	.byte		0
 gdt_end:
+
+drive_sector_count:
+	.byte		0
+drive_cylinder_count_low:
+	.byte		0
+drive_cylinder_count_high:
+	.byte		0
+drive_head_count:
+	.byte		0
 
 kernel_entry:
 	.int		0

@@ -27,8 +27,28 @@
 .section		.text
 
 _start:
+	jmp			actual_start
+	nop
+	
+bpb:
+	.ascii		"DanaOS  "
+	.word		512
+	.byte		1
+	.word		1
+	.byte		2
+	.word		0
+	.word		0
+	.byte		0xF8
+	.word		0
+ebpb:
+	.word		64
+	.word		1
+	.word		0	
+
+actual_start:
 	// Disable interrupts
 	cli
+	
 	// Set the segment registers
 	xorw		%ax, %ax
 	movw		%ax, %ds

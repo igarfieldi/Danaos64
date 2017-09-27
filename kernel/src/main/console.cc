@@ -51,35 +51,43 @@ void console::print(char val) {
 }
 
 void console::print(unsigned char val) {
-    print(static_cast<unsigned long>(val));
+    print(static_cast<unsigned long long>(val));
 }
 
 void console::print(short val) {
-    print(static_cast<long>(val));
+    print(static_cast<long long>(val));
 }
 
 void console::print(unsigned short val) {
-    print(static_cast<unsigned long>(val));
+    print(static_cast<unsigned long long>(val));
 }
 
 void console::print(int val) {
-    print(static_cast<long>(val));
+    print(static_cast<long long>(val));
 }
 
 void console::print(unsigned int val) {
-    print(static_cast<unsigned long>(val));
+    print(static_cast<unsigned long long>(val));
 }
 
 void console::print(long val) {
+    print(static_cast<long long>(val));
+}
+
+void console::print(unsigned long val) {
+    print(static_cast<unsigned long long>(val));
+}
+
+void console::print(long long val) {
     if (val < 0) {
         put('-');
         val *= -1;
     }
-    print(static_cast<unsigned long>(val));
+    print(static_cast<unsigned long long>(val));
 }
 
-void console::print(unsigned long val) {
-    unsigned long currFig, currDigit;
+void console::print(unsigned long long val) {
+    unsigned long long currFig, currDigit;
 
     switch (base) {
         case radix_base::BIN:
@@ -92,7 +100,7 @@ void console::print(unsigned long val) {
             break;
     }
 
-    for (long i = math::logl(static_cast<uint8_t>(base), val); i >= 0; i--) {
+    for (long long i = math::logl(static_cast<uint8_t>(base), val); i >= 0; i--) {
         currFig   = math::powl(static_cast<uint8_t>(base), i);
         currDigit = val / currFig;
 

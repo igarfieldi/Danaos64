@@ -3,8 +3,8 @@ extern "C" {
 	#include "devices/cga.h"
 }
 
-extern "C" uintptr_t parse_elf(uintptr_t header_addr) {
-	auto header = reinterpret_cast<elf::header *>(header_addr);
+extern "C" uintptr_t load_elf(elf::header *header) {
+	uintptr_t header_addr = reinterpret_cast<uintptr_t>(header);
 	
 	cga_clear();
 	
@@ -48,6 +48,7 @@ extern "C" uintptr_t parse_elf(uintptr_t header_addr) {
 	auto program_headers = reinterpret_cast<elf::program_header *>(header_addr + header->e_phoff);
 	// Where the ELF currently resides (which is where we will be copying from
 	volatile const char *curr_elf = reinterpret_cast<volatile const char *>(header_addr);
+	uintptr_t highest_address = 0;
 	
 	// Load all loadable segments
 	for(unsigned int i = 0; i < header->e_phnum; ++i) {
@@ -61,9 +62,25 @@ extern "C" uintptr_t parse_elf(uintptr_t header_addr) {
 			for(unsigned int j = program_headers[i].p_filesz; j < program_headers[i].p_memsz; ++j) {
 				target_mem[j] = 0;
 			}
+
+			uintptr_t upper = program_headers[i].p_vaddr + program_headers[i].p_memsz;
+			highest_address = (upper > highest_address) ? upper : highest_address;
 		}
 	}
-	
+
+	// Load the sections into memory which are not part of the program headers
+	auto section_headers = reinterpret_cast<elf::section_header *>(header_addr + header->e_shoff);
+	char *buffer = reinterpret_cast<char *>(highest_address);
+	for(unsigned int i = 0; i < header->e_shnum; ++i) {
+		if(section_headers[i].sh_addr == 0) {
+			section_headers[i].sh_addr = reinterpret_cast<elf::Elf32_Addr>(buffer);
+			volatile char *section_mem = reinterpret_cast<volatile char *>(header_addr + section_headers[i].sh_offset);
+			for(unsigned int j = 0; j < section_headers[i].sh_size; ++j) {
+				*(buffer++) = section_mem[j];
+			}
+		}
+	}
+
 	// Return the entry point to jump to
 	return header->e_entry;
 }

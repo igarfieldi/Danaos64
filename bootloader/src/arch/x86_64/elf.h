@@ -194,6 +194,6 @@ namespace elf {
 } // namespace elf
 
 
-extern "C" uintptr_t parse_elf(uintptr_t header_addr);
+extern "C" uintptr_t load_elf(elf::header *header);
 
 #endif //DANAOS_BOOTLOADER_ARCH_I386_ELF_H_

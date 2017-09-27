@@ -1,5 +1,9 @@
 #include "cga.h"
 
+static const unsigned int CGA_WIDTH = 80;
+static const unsigned int CGA_HEIGHT = 25;
+static const unsigned int CGA_ATTRIBUTE = 15;
+
 static unsigned int x = 0;
 static unsigned int y = 0;
 static volatile char *cga_screen = (volatile char*) 0xB8000;

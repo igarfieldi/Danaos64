@@ -1,7 +1,7 @@
 .code16
 
 .global			_start
-.global			drive_parameters
+.global			drive_parameters, _hang
 
 .set			BOOTLOADER_START,		0x7C00
 .set			BOOTLOADER_STACK,		0x7C00
@@ -197,6 +197,8 @@ show_info:
 	
 	// Enable the A20 line (if it isn't done already)
 	call		_enable_a20
+	// Fetch the memory map
+	call		_get_memmap
 	
 before_kernel_load:
 	// Now load the kernel
@@ -287,25 +289,15 @@ protectedMode:
 
 elf:
 	// Parse the ELF file to properly load the kernel
+	push		$memmap
 	push		$KERNEL_COPY_ADDR
-	call		parse_elf
-	addl		$4, %esp
-	movl		%eax, (kernel_entry)
+	call		boot_main
+	addl		$8, %esp
 	
-	cmp			$0, %eax
-	je			.hang32
-
-jump_kernel:
-	movl		(kernel_entry), %edi
-	movl		$MULTIBOOT2_MAGIC, %eax
-	movl		$0, %ebx
-	// Jump to the kernel
-	jmp			*%edi
-	
-.hang32:
+_hang:
 	cli
 	hlt
-	jmp			.hang32
+	jmp			_hang
 	
 gdt_descriptor:
 	.word		gdt_end - gdt - 1
@@ -339,7 +331,6 @@ msg_boot_drive:		.asciz "Boot drive: "
 msg_boot_part:		.asciz "Boot partition: "
 msg_loader_size:	.asciz "Bootloader size: "
 
-kernel_entry:
-	.int		0
 kernel_phys:
 	.int		0x100000
+

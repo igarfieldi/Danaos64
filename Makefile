@@ -58,7 +58,7 @@ include	$(CFGDIR)/make/flags/isa_flags.mk
 CCFLAGS			+= -ffreestanding -O0 -std=c11 -ggdb -Wall -Wextra
 CPPFLAGS		+= -ffreestanding -O0 -std=c++17 -fno-exceptions -fno-rtti -ggdb -Wall -Wextra
 ASMFLAGS		+= -ggdb
-LDFLAGS			+= -ffreestanding -O0 -nostdlib -std=c++17 -lgcc --disable-__cxa_atexit -ggdb
+LDFLAGS			+= -nostdlib -lgcc --disable-__cxa_atexit
 TARGETCCFLAGS	:= $(CCFLAGS) $($(ISA)-CCFLAGS)
 TARGETCPPFLAGS	:= $(CPPFLAGS) $($(ISA)-CPPFLAGS)
 TARGETASMFLAGS	:= $(ASMFLAGS) $($(ISA)-ASMFLAGS)

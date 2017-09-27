@@ -13,8 +13,8 @@ namespace math {
         return (a > b) ? a : b;
     }
 
-    long powl(long base, unsigned long exp);
-    unsigned long logl(unsigned long base, unsigned long arg);
+    long long powl(long long base, unsigned long long exp);
+    unsigned long long logl(unsigned long long base, unsigned long long arg);
 
 } // namespace math
 

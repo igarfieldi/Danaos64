@@ -21,6 +21,8 @@ private:
     void print(unsigned int val);
     void print(long val);
     void print(unsigned long val);
+    void print(long long val);
+    void print(unsigned long long val);
     void print(void *ptr);
 
     uint8_t screenX, screenY;

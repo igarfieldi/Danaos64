@@ -12,6 +12,7 @@
 #include "devices/cga.h"
 #include "libk/math.h"
 #include "debug/trace.h"
+#include "hal/memmanager.h"
 
 console kernel::m_console;
 elf::symbol_lookup kernel::m_elf_lookup;
@@ -56,12 +57,12 @@ extern "C" void kernelMain(uint32_t magic, uintptr_t info) {
             }
             case MULTIBOOT_TAG_TYPE_BOOTDEV:
                 kernel::m_console.print("Boot device: []\n", reinterpret_cast<multiboot_tag_bootdev*>(info + byte)->biosdev);
-                break;
+                break;*/
             case MULTIBOOT_TAG_TYPE_MMAP: {
                 memmap = reinterpret_cast<multiboot_tag_mmap*>(info + byte);
                 break;
             }
-            case MULTIBOOT_TAG_TYPE_VBE:
+            /*case MULTIBOOT_TAG_TYPE_VBE:
                 kernel::m_console.print("VBE mode: {}\n", reinterpret_cast<multiboot_tag_vbe*>(info + byte)->vbe_mode);
                 break;*/
             case MULTIBOOT_TAG_TYPE_FRAMEBUFFER: {
@@ -106,7 +107,9 @@ extern "C" void kernelMain(uint32_t magic, uintptr_t info) {
 		debug::backtrace(2);
     }
 
-	kernel::m_console.print("Kernel loaded!");
+    kernel::m_console.print("Kernel loaded!\n");
+    
+    hal::memory_manager::instance().init(hal::multiboot_memmap_iterator(*memmap));
 
     while(true);
 }

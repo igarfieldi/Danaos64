@@ -15,6 +15,13 @@ class kernel {
 private:
 public:
     kernel(const multiboot_info *mbinfo);
+
+    template < class... Args >
+    static void __attribute__((noreturn)) panic(const char *msg, Args... args) {
+        kernel::m_console.print("PANIC: ");
+        kernel::m_console.print(msg, static_cast<Args&&>(args)...);
+        while(true);
+    }
     
     static console m_console;
     static elf::symbol_lookup m_elf_lookup;

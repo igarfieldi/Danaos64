@@ -21,8 +21,7 @@
 
  #ifndef MULTIBOOT_HEADER
  #define MULTIBOOT_HEADER 1
- 
- /* How many bytes from the start of the file we search for the header.  */
+  /* How many bytes from the start of the file we search for the header.  */
  #define MULTIBOOT_SEARCH			32768
  #define MULTIBOOT_HEADER_ALIGN			8
  
@@ -189,12 +188,13 @@
  {
    multiboot_uint64_t addr;
    multiboot_uint64_t len;
- #define MULTIBOOT_MEMORY_AVAILABLE		1
- #define MULTIBOOT_MEMORY_RESERVED		2
- #define MULTIBOOT_MEMORY_ACPI_RECLAIMABLE       3
- #define MULTIBOOT_MEMORY_NVS                    4
- #define MULTIBOOT_MEMORY_BADRAM                 5
-   multiboot_uint32_t type;
+   enum class area_type : multiboot_uint32_t {
+    AVAILABLE         = 1,
+    RESERVED          = 2,
+    ACPI_RECLAIMABLE  = 3,
+    NVS               = 4,
+    BADRAM            = 5
+   } type;
    multiboot_uint32_t zero;
  };
  typedef struct multiboot_mmap_entry multiboot_memory_map_t;

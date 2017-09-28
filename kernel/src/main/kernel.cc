@@ -12,7 +12,7 @@
 #include "devices/cga.h"
 #include "libk/math.h"
 #include "debug/trace.h"
-#include "hal/memmanager.h"
+#include "hal/memory/memmanager.h"
 
 console kernel::m_console;
 elf::symbol_lookup kernel::m_elf_lookup;
@@ -108,8 +108,8 @@ extern "C" void kernelMain(uint32_t magic, uintptr_t info) {
     }
 
     kernel::m_console.print("Kernel loaded!\n");
-    
-    hal::memory_manager::instance().init(hal::multiboot_memmap_iterator(*memmap));
+
+    hal::memory_manager::instance().init(hal::multiboot_memmap(*memmap));
 
     while(true);
 }

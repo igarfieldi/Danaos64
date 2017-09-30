@@ -2,8 +2,8 @@
 
 namespace math {
 
-    long long powl(long long base, unsigned long long exp) {
-        long res = 1;
+    unsigned long long powull(unsigned long long base, unsigned long long exp) {
+        unsigned long long res = 1;
 
         while (exp) {
             res *= base;
@@ -13,15 +13,18 @@ namespace math {
         return res;
     }
 
-    unsigned long long logl(unsigned long long base, unsigned long long arg) {
+    unsigned long long logull(unsigned long long base, unsigned long long arg) {
         long long res = 0;
         unsigned long long temp = 1;
         unsigned long long oldTemp = 1;
 
         while ((temp *= base) <= arg) {
-            if (oldTemp > temp) // overflow happened (TODO: this might not always work!)
+            // Check for overflow!
+            if(oldTemp > temp) {
                 return res;
+            }
             res++;
+            oldTemp = temp;
         }
 
         return res;

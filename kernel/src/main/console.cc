@@ -100,8 +100,8 @@ void console::print(unsigned long long val) {
             break;
     }
 
-    for (long long i = math::logl(static_cast<uint8_t>(base), val); i >= 0; i--) {
-        currFig   = math::powl(static_cast<uint8_t>(base), i);
+    for (unsigned long long i = math::logull(static_cast<uint8_t>(base), val) + 1; i > 0; i--) {
+        currFig   = math::powull(static_cast<uint8_t>(base), i - 1);
         currDigit = val / currFig;
 
         // If currDigit > 9, continue with capital letters (only for hex base)

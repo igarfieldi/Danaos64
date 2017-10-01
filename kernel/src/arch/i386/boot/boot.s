@@ -8,24 +8,36 @@
 
 #define ASM
 
-.global			_entry, _start
-.global			_pageDirectory
+.global			entry
+.global			_page_directory
+.extern			KERNEL_VIRT_OFFSET
 
 .code32
 
-// Multiboot2 header constants
+.section		.text
 
+// Multiboot2 header constants
 .set			MAGIC,					0xE85250D6			// Magic number
 .set			ARCHITECTURE,			0
-
 // Kernel constants
 .set			KERNEL_STACK_SIZE,		32768
+// Set the entry address for higher-half kernel
+.set			KERNEL_VIRTUAL_OFFSET,	0xC0000000
+.set			KERNEL_PAGE_INDEX,		KERNEL_VIRTUAL_OFFSET >> 22
+.set			_entry,					entry - KERNEL_VIRTUAL_OFFSET
+// Constants for paging structure
+.set			CR0_PAGING,				0x80000000
+.set			CR4_PSE,				0x00000010
+.set			PAGING_PRESENT_4MB_RW,	0x00000083
+.set			PAGING_PRESENT_4KB_RW,	0x00000003
+.set			PAGING_DIR_ENTRIES,		1024
+.set			PAGING_ENTRY_SIZE,		4
+
 
 // Multiboot section
 .section		.multiboot, "ax", @progbits
+jmp				entry
 
-	jmp			_entry
-	
 .align			8
 _multibootHeaderStart:
 	.int		MAGIC
@@ -51,7 +63,29 @@ _multibootHeaderEnd:
 // Kernel entry point
 .section .text
 
-_entry:
+entry:
+	cli
+
+	// Load the page directory for identity mapping
+	movl		$(_page_directory - KERNEL_VIRTUAL_OFFSET), %ecx
+	movl		%ecx, %cr3
+
+	// Enable PSE for 4MB pages
+	movl		%cr4, %ecx
+	orl			$CR4_PSE, %ecx
+	movl		%ecx, %cr4
+
+
+	// Enable paging
+	movl		%cr0, %ecx
+	orl			$CR0_PAGING, %ecx
+	movl		%ecx, %cr0
+
+	// Long jump to reload segment registers (not sure if needed...)
+	movl		$higher_half, %ecx
+	jmp			*%ecx
+
+higher_half:
 	cli
 
 	// Setup initial kernel stack
@@ -79,6 +113,19 @@ _entry:
 
 // Data segment
 .section .data
+
+.align			4096
+_page_directory:
+	// Identity map first 4MB, then nothing, then map the virtual space back to the first 4MB
+	.int		0x0000000 + PAGING_PRESENT_4MB_RW
+	.int		0x0400000 + PAGING_PRESENT_4MB_RW
+	.int		0x0800000 + PAGING_PRESENT_4MB_RW
+	.int		0x0C00000 + PAGING_PRESENT_4MB_RW
+	.int		0x1000000 + PAGING_PRESENT_4MB_RW
+	.int		0x1400000 + PAGING_PRESENT_4MB_RW
+	.skip		PAGING_ENTRY_SIZE * (KERNEL_PAGE_INDEX - 6), 0
+	.int		PAGING_PRESENT_4MB_RW
+	.skip		PAGING_ENTRY_SIZE * (PAGING_DIR_ENTRIES - KERNEL_PAGE_INDEX - 1), 0
 
 // Read-only data segment
 .section .rodata

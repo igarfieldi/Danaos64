@@ -36,7 +36,7 @@ namespace hal {
             using area_type = typename map_type::entry_type::area_type;
 
             // Compute how many page frames of physical RAM we have
-            uintptr_t highest_address = 0;
+            uint64_t highest_address = 0;
             for(auto &entry : map) {
                 // While we're here mark memory below 1MBB as unavailable because it contains BIOS stuff we don't wanna overwrite
                 if(entry.addr < 0x100000) {
@@ -81,13 +81,16 @@ namespace hal {
                 }
             }
 
+            // No address means no memory!
             if(bitmap_address == 0) {
                 kernel::panic("Couldn't find space for the memory bitmap!");
             }
 
             // Initialize the physical memory manager
             phy_mem_manager::instance().init(bitmap_address, page_frame_count);
-
+            
+            // Mark kernel frames and everything below 1MB as used
+            phy_mem_manager::instance().alloc_range(0, reinterpret_cast<uintptr_t>(&KERNEL_PHYS_END));
             // Mark the RAM areas
             for(auto &entry : map) {
                 if(entry.type != area_type::AVAILABLE) {
@@ -95,8 +98,7 @@ namespace hal {
                 }
             }
 
-            // Mark kernel frames and everything below 1MB as used
-            phy_mem_manager::instance().alloc_range(0, reinterpret_cast<uintptr_t>(&KERNEL_PHYS_END));
+            
 
             kernel::m_console.print("Bitmap location: []\n", bitmap_address);
             kernel::m_console.print("Max: {}\n", std::numeric_limits<unsigned long long>::max());

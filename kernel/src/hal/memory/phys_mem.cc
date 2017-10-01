@@ -17,7 +17,7 @@ namespace hal {
         m_phys_bitmap = util::bitmap<size_t>(bitmap_address, page_frames);
         m_phys_bitmap.clear();
         // Allocate whatever space the bitmap needs
-        this->alloc_range(bitmap_address, page_frames / sizeof(char));
+        this->alloc_range(bitmap_address, page_frames / CHAR_BIT);
     }
 
     bool phy_mem_manager::is_available_frame(size_t page_frame) const noexcept {

@@ -53,7 +53,7 @@ extern "C" uintptr_t load_elf(elf::header *header) {
 	// Load all loadable segments
 	for(unsigned int i = 0; i < header->e_phnum; ++i) {
 		if(program_headers[i].p_type == elf::program_header::type::LOAD) {
-			char *target_mem = reinterpret_cast<char *>(program_headers[i].p_vaddr);
+			char *target_mem = reinterpret_cast<char *>(program_headers[i].p_paddr);
 			// What's actually in file (and thus copyable)
 			for(unsigned int j = 0; j < program_headers[i].p_filesz; ++j) {
 				target_mem[j] = curr_elf[program_headers[i].p_offset + j];

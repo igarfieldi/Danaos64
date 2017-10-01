@@ -7,6 +7,7 @@
 #include "hal/memory/phys_mem.h"
 #include "main/kernel.h"
 #include "hal/util/bitmap.h"
+#include "libk/math.h"
 
 extern uintptr_t KERNEL_PHYS_BEGIN;
 extern uintptr_t KERNEL_PHYS_CODE_BEGIN;
@@ -58,24 +59,33 @@ namespace hal {
             size_t bitmap_size = page_frame_count / sizeof(char);
             uintptr_t bitmap_address = 0;
             for(auto &entry : map) {
+                // TODO: ensure that we stay within the addressable memory range!
                 // Has to be free and not come before the kernel
                 if(entry.type == area_type::AVAILABLE &&
-                            entry.addr >= reinterpret_cast<uintptr_t>(&KERNEL_PHYS_BEGIN)) {
-                    // Check if we share the area with the kernel
-                    if(entry.addr >= reinterpret_cast<uintptr_t>(&KERNEL_PHYS_END)) {
-                        // Not sharing, check for size
-                        if(entry.len >= bitmap_size) {
-                            bitmap_address = entry.addr;
-                            break;
-                        }
-                    } else {
-                        // Sharing, need to make sure we got enough space left
-                        uintptr_t end_addr = entry.addr + entry.len;
-                        if(end_addr >= reinterpret_cast<uintptr_t>(&KERNEL_PHYS_END) &&
-                                end_addr - reinterpret_cast<uintptr_t>(&KERNEL_PHYS_END) >= bitmap_size) {
-                            // Enough space, all good
-                            bitmap_address = reinterpret_cast<uintptr_t>(&KERNEL_PHYS_END);
-                            break;
+                            entry.addr >= reinterpret_cast<uintptr_t>(&KERNEL_PHYS_BEGIN) &&
+                            entry.addr + entry.len > reinterpret_cast<uintptr_t>(&KERNEL_PHYS_END)) {
+                    // Ensure enough space when considering the kernel
+                    if((reinterpret_cast<uintptr_t>(&KERNEL_PHYS_END) < entry.addr) ||
+                                (entry.addr + entry.len - reinterpret_cast<uintptr_t>(&KERNEL_PHYS_END) >= bitmap_size)) {
+                        uintptr_t after_kernel = math::max<uintptr_t>(entry.addr, reinterpret_cast<uintptr_t>(&KERNEL_PHYS_END));
+                        size_t entry_length = entry.addr + entry.len - after_kernel;
+
+                        // Now check if we overlap with the memory map
+                        if(after_kernel > map.address() + map.size()) {
+                            // No problem, check for length
+                            if(entry_length >= bitmap_size) {
+                                bitmap_address = after_kernel;
+                                break;
+                            }
+                        } else {
+                            // Possible problem, check if we can fit it before or after the memory map
+                            if((after_kernel + bitmap_size < map.address()) && (entry_length >= bitmap_size)) {
+                                bitmap_address = after_kernel;
+                                break;
+                            } else if(after_kernel + entry_length - (map.address() + map.size()) >= bitmap_size) {
+                                bitmap_address = map.address() + map.size();
+                                break;
+                            }
                         }
                     }
                 }
@@ -107,8 +117,9 @@ namespace hal {
                         &KERNEL_PHYS_CODE_BEGIN, &KERNEL_PHYS_CODE_END,
                         &KERNEL_PHYS_DATA_BEGIN, &KERNEL_PHYS_DATA_END,
                         &KERNEL_PHYS_RODATA_BEGIN, &KERNEL_PHYS_RODATA_END);
-            phy_mem_manager::instance().alloc_address(0x115000);
-            kernel::m_console.print("Alloc: []\n", phy_mem_manager::instance().alloc_any(3));
+            kernel::m_console.print("Alloc: []\n", phy_mem_manager::instance().alloc_any(1));
+            phy_mem_manager::instance().free_address(phy_mem_manager::instance().alloc_any(4), 4);
+            kernel::m_console.print("Alloc: []\n", phy_mem_manager::instance().alloc_any(4));
         }
     };
 

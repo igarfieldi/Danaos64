@@ -13,12 +13,24 @@ namespace hal {
         return m_map.entries[i];
     }
 
+    uintptr_t multiboot_memmap::address() const {
+        return reinterpret_cast<uintptr_t>(&m_map);
+    }
+    
+    size_t multiboot_memmap::size() const {
+        return m_map.size;
+    }
+    
+    size_t multiboot_memmap::entries() const {
+        return (m_map.size - sizeof(multiboot_tag_mmap)) / m_map.entry_size;
+    }
+
     multiboot_memmap::iterator multiboot_memmap::begin() {
         return iterator(m_map.entries[0]);
     }
 
     multiboot_memmap::iterator multiboot_memmap::end() {
-        return iterator(m_map.entries[(m_map.size - sizeof(multiboot_tag_mmap)) / m_map.entry_size]);
+        return iterator(m_map.entries[this->entries()]);
     }
     
     multiboot_memmap::const_iterator multiboot_memmap::begin() const {

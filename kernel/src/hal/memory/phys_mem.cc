@@ -90,6 +90,7 @@ namespace hal {
     uintptr_t phy_mem_manager::alloc_any() noexcept {
         size_t first_clear = m_phys_bitmap.get_first_clear();
         if(first_clear != m_phys_bitmap.npos) {
+            m_phys_bitmap.set(first_clear);
             return first_clear * PAGE_FRAME_SIZE;
         }
         return 0;
@@ -106,6 +107,9 @@ namespace hal {
                 }
             }
             if(last_free >= curr_frame + frame_count) {
+                for(size_t frame = curr_frame; frame < curr_frame + frame_count; ++frame) {
+                    m_phys_bitmap.set(frame);
+                }
                 return curr_frame * PAGE_FRAME_SIZE;
             }
             curr_frame = last_free + 1;
@@ -120,6 +124,7 @@ namespace hal {
         // TODO: use more efficient algorithm!
         for(size_t frame = get_page_frame(address_hint); frame < m_page_frame_count; ++frame) {
             if(is_available_frame(frame)) {
+                m_phys_bitmap.set(frame);
                 return frame;
             }
         }
@@ -141,6 +146,9 @@ namespace hal {
                 }
             }
             if(last_free >= curr_frame + frame_count) {
+                for(size_t frame = curr_frame; frame < curr_frame + frame_count; ++frame) {
+                    m_phys_bitmap.set(frame);
+                }
                 return curr_frame * PAGE_FRAME_SIZE;
             }
         }
@@ -159,6 +167,9 @@ namespace hal {
                 }
             }
             if(last_free >= curr_frame + frame_count) {
+                for(size_t frame = curr_frame; frame < curr_frame + frame_count; ++frame) {
+                    m_phys_bitmap.set(frame);
+                }
                 return curr_frame * PAGE_FRAME_SIZE;
             }
             curr_frame = last_free + 1;
@@ -186,6 +197,9 @@ namespace hal {
                 }
             }
             if(last_free >= curr_frame + frame_count) {
+                for(size_t frame = curr_frame; frame < curr_frame + frame_count; ++frame) {
+                    m_phys_bitmap.set(frame);
+                }
                 return curr_frame * PAGE_FRAME_SIZE;
             }
         }

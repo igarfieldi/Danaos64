@@ -23,6 +23,10 @@ namespace hal {
         entry_type &operator[](size_t i);
         const entry_type &operator[](size_t i) const;
 
+        uintptr_t address() const;
+        size_t size() const;
+        size_t entries() const;
+
         iterator begin();
         iterator end();
         const_iterator begin() const;

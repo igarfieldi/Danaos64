@@ -8,7 +8,7 @@
 
 #define ASM
 
-.global			entry
+.global			_entry
 .global			_page_directory
 .extern			KERNEL_VIRT_OFFSET
 
@@ -24,7 +24,6 @@
 // Set the entry address for higher-half kernel
 .set			KERNEL_VIRTUAL_OFFSET,	0xC0000000
 .set			KERNEL_PAGE_INDEX,		KERNEL_VIRTUAL_OFFSET >> 22
-.set			_entry,					entry - KERNEL_VIRTUAL_OFFSET
 // Constants for paging structure
 .set			CR0_PAGING,				0x80000000
 .set			CR4_PSE,				0x00000010
@@ -36,8 +35,6 @@
 
 // Multiboot section
 .section		.multiboot, "ax", @progbits
-jmp				entry
-
 .align			8
 _multibootHeaderStart:
 	.int		MAGIC
@@ -63,7 +60,7 @@ _multibootHeaderEnd:
 // Kernel entry point
 .section .text
 
-entry:
+_entry:
 	cli
 
 	// Load the page directory for identity mapping

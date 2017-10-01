@@ -1,5 +1,5 @@
 /* Designate entry point of the kernel (located in boot.s) */
-ENTRY(entry)
+ENTRY(_entry)
 /* Specify the output format */
 OUTPUT_FORMAT(elf32-i386)
 

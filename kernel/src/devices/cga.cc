@@ -1,5 +1,8 @@
 #include "cga.h"
 #include "libk/math.h"
+#include "hal/memory/virt_mem.h"
+
+extern uintptr_t KERNEL_VIRT_OFFSET;
 
 namespace devices {
 
@@ -8,7 +11,11 @@ namespace devices {
     }
 	
 	void cga::init(uintptr_t framebuffer_addr, size_t width, size_t height) {
-		m_screen = reinterpret_cast<volatile char*>(framebuffer_addr);
+        // Temporary fix for paging
+        m_screen = reinterpret_cast<volatile char*>(framebuffer_addr + reinterpret_cast<uintptr_t>(&KERNEL_VIRT_OFFSET));
+        hal::virt_mem_manager::instance().map_range(reinterpret_cast<uintptr_t>(m_screen),
+                    reinterpret_cast<uintptr_t>(m_screen) + width * height * 2,
+                    framebuffer_addr, true, false, false);
 		m_width = width;
 		m_height = height;
 	}

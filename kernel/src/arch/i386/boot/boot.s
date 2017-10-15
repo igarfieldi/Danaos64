@@ -23,14 +23,14 @@
 .set			KERNEL_STACK_SIZE,		32768
 // Set the entry address for higher-half kernel
 .set			KERNEL_VIRTUAL_OFFSET,	0xC0000000
-.set			KERNEL_PAGE_INDEX,		KERNEL_VIRTUAL_OFFSET >> 22
+.set			KERNEL_PD_INDEX,		KERNEL_VIRTUAL_OFFSET >> 22
 // Constants for paging structure
 .set			CR0_PAGING,				0x80000000
 .set			CR4_PSE,				0x00000010
 .set			PAGING_PRESENT_4MB_RW,	0x00000083
-.set			PAGING_PRESENT_4KB_RW,	0x00000003
-.set			PAGING_DIR_ENTRIES,		1024
-.set			PAGING_ENTRY_SIZE,		4
+.set			PAGING_4MB_SIZE,		0x00400000
+.set			PAGING_PD_ENTRIES,		1024
+.set			PAGING_PD_ENTRY_SIZE,	4
 
 
 // Multiboot section
@@ -57,11 +57,39 @@ _infoTagEnd:
 	.int		8			// Size
 _multibootHeaderEnd:
 
+
 // Kernel entry point
 .section .text
 
 _entry:
 	cli
+
+	// Setup initial kernel stack
+	movl		$(kernel_stack - KERNEL_VIRTUAL_OFFSET) + KERNEL_STACK_SIZE, %esp
+
+	push		%eax
+	push		%ebx
+
+	// Identity-map everything until the kernel memory space
+	movl		$(_page_directory - KERNEL_VIRTUAL_OFFSET), %edi
+	movl		$PAGING_PRESENT_4MB_RW, %edx
+	movl		$KERNEL_PD_INDEX, %ecx
+.identity_map:
+	movl		%edx, (%edi)
+	addl		$PAGING_4MB_SIZE, %edx
+	addl		$PAGING_PD_ENTRY_SIZE, %edi
+	dec			%ecx
+	jnz			.identity_map
+
+	// Map the kernel memory space to the beginning of physical memory
+	movl		$PAGING_PRESENT_4MB_RW, %edx
+	movl		$(PAGING_PD_ENTRIES - KERNEL_PD_INDEX), %ecx
+.kernel_map:
+	movl		%edx, (%edi)
+	addl		$PAGING_4MB_SIZE, %edx
+	addl		$PAGING_PD_ENTRY_SIZE, %edi
+	dec			%ecx
+	jnz			.kernel_map
 
 	// Load the page directory for identity mapping
 	movl		$(_page_directory - KERNEL_VIRTUAL_OFFSET), %ecx
@@ -85,7 +113,9 @@ _entry:
 higher_half:
 	cli
 
-	// Setup initial kernel stack
+	// Re-set kernel stack to use virtual address
+	pop			%ebx
+	pop			%eax
 	movl		$kernel_stack + KERNEL_STACK_SIZE, %esp
 
 	// Push the parameters for the main kernel function here already, since
@@ -113,16 +143,7 @@ higher_half:
 
 .align			4096
 _page_directory:
-	// Identity map first 4MB, then nothing, then map the virtual space back to the first 4MB
-	.int		0x0000000 + PAGING_PRESENT_4MB_RW
-	.int		0x0400000 + PAGING_PRESENT_4MB_RW
-	.int		0x0800000 + PAGING_PRESENT_4MB_RW
-	.int		0x0C00000 + PAGING_PRESENT_4MB_RW
-	.int		0x1000000 + PAGING_PRESENT_4MB_RW
-	.int		0x1400000 + PAGING_PRESENT_4MB_RW
-	.skip		PAGING_ENTRY_SIZE * (KERNEL_PAGE_INDEX - 6), 0
-	.int		PAGING_PRESENT_4MB_RW
-	.skip		PAGING_ENTRY_SIZE * (PAGING_DIR_ENTRIES - KERNEL_PAGE_INDEX - 1), 0
+	.skip		PAGING_PD_ENTRY_SIZE * PAGING_PD_ENTRIES, 0
 
 // Read-only data segment
 .section .rodata

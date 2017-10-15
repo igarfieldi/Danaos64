@@ -23,11 +23,8 @@ kernel::kernel(const multiboot_info *mbinfo) {
 }
 
 extern "C" void kernelMain(uint32_t magic, uintptr_t info) {
-    devices::cga::instance().clear();
-
     if (magic != MULTIBOOT2_BOOTLOADER_MAGIC) {
-        kernel::m_console.print("Error: The kernel was not loaded by a multiboot loader "
-                        "(possibly our custom bootloader, which ironically isn't supported yet ^.^)!");
+        kernel::m_console.print("Error: The kernel was not loaded by a multiboot loader!");
         while(true);
     }
 
@@ -92,24 +89,26 @@ extern "C" void kernelMain(uint32_t magic, uintptr_t info) {
         }
     }
     
+    if(memmap != nullptr) {
+        hal::memory_manager::instance().init(hal::multiboot_memmap(*memmap));
+    }
     if(framebuffer != nullptr) {
     	devices::cga::instance().init(framebuffer->framebuffer_addr, framebuffer->framebuffer_width,
                         framebuffer->framebuffer_height);
-        devices::cga::instance().clear();
+        //devices::cga::instance().clear();
         kernel::m_console.print("Framebuffer initialized at [] ({}/{})\n", devices::cga::instance().buffer_address(),
                             devices::cga::instance().width(), devices::cga::instance().height());
-    }
-    if(memmap != nullptr) {
-		kernel::m_console.print("Memory map entries: {}\n", (memmap->size - 16) / memmap->entry_size);
+    } else {
+    	devices::cga::instance().init(0xB8000, 80, 25);
     }
     if(elf_sections != nullptr) {
+        // TODO: make those addresses virtual!
 		kernel::m_elf_lookup.init(elf_sections);
 		debug::backtrace(2);
     }
 
     kernel::m_console.print("Kernel loaded!\n");
 
-    hal::memory_manager::instance().init(hal::multiboot_memmap(*memmap));
 
     while(true);
 }

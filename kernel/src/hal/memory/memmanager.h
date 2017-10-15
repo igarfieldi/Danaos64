@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include "hal/memory/memmap.h"
 #include "hal/memory/phys_mem.h"
+#include "hal/memory/virt_mem.h"
 #include "main/kernel.h"
 #include "hal/util/bitmap.h"
 #include "libk/math.h"
@@ -51,12 +52,12 @@ namespace hal {
                     highest_address = entry.addr + entry.len;
                 }
             }
-            size_t page_frame_count = highest_address / phy_mem_manager::PAGE_FRAME_SIZE;
+            size_t page_frame_count = highest_address / phys_mem_manager::PAGE_FRAME_SIZE;
 
             // TODO: also allow bitmap to go before the kernel!
 
             // Now find space where we can put our bitmap
-            size_t bitmap_size = page_frame_count / sizeof(char);
+            size_t bitmap_size = page_frame_count / CHAR_BIT;
             uintptr_t bitmap_address = 0;
             for(auto &entry : map) {
                 // TODO: ensure that we stay within the addressable memory range!
@@ -97,29 +98,22 @@ namespace hal {
             }
 
             // Initialize the physical memory manager
-            phy_mem_manager::instance().init(bitmap_address, page_frame_count);
+            phys_mem_manager::instance().init(bitmap_address, page_frame_count);
             
             // Mark kernel frames and everything below 1MB as used
-            phy_mem_manager::instance().alloc_range(0, reinterpret_cast<uintptr_t>(&KERNEL_PHYS_END));
+            phys_mem_manager::instance().alloc_range(0, reinterpret_cast<uintptr_t>(&KERNEL_PHYS_END));
             // Mark the RAM areas
             for(auto &entry : map) {
                 if(entry.type != area_type::AVAILABLE) {
-                    phy_mem_manager::instance().alloc_range(entry.addr, entry.len);
+                    phys_mem_manager::instance().alloc_range(entry.addr, entry.len);
                 }
             }
 
-            
+            kernel::m_console.print("Kernel: [] - []\n", reinterpret_cast<uintptr_t>(&KERNEL_PHYS_BEGIN),
+                                reinterpret_cast<uintptr_t>(&KERNEL_PHYS_END));
+            kernel::m_console.print("Bitmap: [] - []\n", bitmap_address, bitmap_address + bitmap_size);
 
-            kernel::m_console.print("Bitmap location: []\n", bitmap_address);
-            kernel::m_console.print("Max: {}\n", std::numeric_limits<unsigned long long>::max());
-            kernel::m_console.print("Kernel addresses: [] [] [] [] [] [] [] []\n",
-                        &KERNEL_PHYS_BEGIN, &KERNEL_PHYS_END,
-                        &KERNEL_PHYS_CODE_BEGIN, &KERNEL_PHYS_CODE_END,
-                        &KERNEL_PHYS_DATA_BEGIN, &KERNEL_PHYS_DATA_END,
-                        &KERNEL_PHYS_RODATA_BEGIN, &KERNEL_PHYS_RODATA_END);
-            kernel::m_console.print("Alloc: []\n", phy_mem_manager::instance().alloc_any(1));
-            phy_mem_manager::instance().free_address(phy_mem_manager::instance().alloc_any(4), 4);
-            kernel::m_console.print("Alloc: []\n", phy_mem_manager::instance().alloc_any(4));
+            virt_mem_manager::instance().init();
         }
     };
 

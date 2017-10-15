@@ -4,7 +4,7 @@ KERNELSYMBOLS		:= $(KERNELDIR)/$(BINDIR)/$(KERNELNAME)-symbols.sym
 KERNELELF			:= $(KERNELDIR)/$(BINDIR)/$(KERNELNAME).elf
 KERNELELFSTRIPPED	:= $(KERNELDIR)/$(BINDIR)/$(KERNELNAME)-nodebug.elf
 KERNELIMG			:= $(KERNELDIR)/$(BINDIR)/$(KERNELNAME).img
-KERNELINCDIR		:= $(KERNELDIR)/$(SRCDIR)
+KERNELINCDIR		:= ./$(KERNELDIR)/$(SRCDIR)
 
 
 # Scripts for the linker, the debugger, and the code formatter
@@ -25,7 +25,7 @@ KERNELSRC			+= $(shell $(FIND) $(KERNELDIR)/$(SRCDIR)/arch/$(ISA) -name "*.cc")
 # Sort the source list and remove duplicates with that
 KERNELSRC			:= $(sort $(KERNELSRC))
 
-KERNELARCHINC		:= $(KERNELDIR)/$(SRCDIR)/arch/$(ISA)
+KERNELARCHINC		:= ./$(KERNELDIR)/$(SRCDIR)/arch/$(ISA)
 
 # Get the corresponding object files by substituting the endings and the directory
 KERNELOBJ			:= $(patsubst $(KERNELDIR)/$(SRCDIR)/%,$(KERNELDIR)/$(OBJDIR)/%,$(KERNELSRC))
@@ -76,7 +76,7 @@ ifdef VERBOSE
 	@echo "    (ASM)     $< --> $@"
 endif
 	@mkdir -p $(dir $@)
-	@$(ASM) -MD $(patsubst %.o,%.d,$@) $< -o $@ -I $(KERNELINCDIR) -I $(KERNELARCHINC) $(TARGETASMFLAGS)
+	@$(ASM) -MD $(patsubst %.o,%.d,$@) $< -o $@ -I$(KERNELINCDIR) -I$(KERNELARCHINC) $(TARGETASMFLAGS)
 
 # C rule
 $(KERNELDIR)/$(OBJDIR)/%.o : $(KERNELDIR)/$(SRCDIR)/%.c Makefile
@@ -84,7 +84,7 @@ ifdef VERBOSE
 	@echo "    (C)       $< --> $@"
 endif
 	@mkdir -p $(dir $@)
-	@$(CC) -MD -c $< -o $@ -I $(KERNELINCDIR) -I $(KERNELARCHINC) $(TARGETCCFLAGS)
+	@$(CC) -MD -c $< -o $@ -I$(KERNELINCDIR) -I$(KERNELARCHINC) $(TARGETCCFLAGS)
 
 # C++ rule
 $(KERNELDIR)/$(OBJDIR)/%.o : $(KERNELDIR)/$(SRCDIR)/%.cc Makefile
@@ -92,7 +92,7 @@ ifdef VERBOSE
 	@echo "    (CC)      $< --> $@"
 endif
 	@mkdir -p $(dir $@)
-	@$(CPP) -MD -c $< -o $@ -I $(KERNELINCDIR) -I $(KERNELARCHINC) $(TARGETCPPFLAGS)
+	@$(CPP) -MD -c $< -o $@ -I$(KERNELINCDIR) -I$(KERNELARCHINC) $(TARGETCPPFLAGS)
 
 clean-kernel:
 	@echo "    (MAKE)    Cleaning kernel..."

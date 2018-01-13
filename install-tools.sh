@@ -25,10 +25,11 @@ PREFIX="/usr"
 CORES=$(grep -c ^processor /proc/cpuinfo)
 
 # Parse the options
-while getopts ":p:c:" OPTION; do
+while getopts ":p:c:h" OPTION; do
 	case $OPTION in
 		p) PREFIX=$OPTARG;;
 		c) CORES=$OPTARG;;
+		h) echo "Usage: -c NO_THREADS -p INSTALL_PREFIX [TARGETS ...]"; exit 0;;
 		\?) echo "Invalid option: $OPTARG"; exit 1;;
 		:) echo "Invalid option: $OPTARG requires an argument"; exit 1;;
 	esac

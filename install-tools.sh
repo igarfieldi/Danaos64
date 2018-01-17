@@ -79,6 +79,14 @@ mv cloog-0.18.4 gcc-7.2.0/cloog
 # This may need to be adapted for different GCC versions
 sed -i -e '3586,3591d' gcc-7.2.0/gcc/cp/class.c
 
+# To use mcmodel=kernel and remove red-zone we need to modify libgcc's build
+# First add a new file announcing the multilib options:
+printf "MULTILIB_OPTIONS += mno-red-zone mcmodel=kernel\nMULTILIB_DIRNAMES += no-red-zone mcmodel-kernel" > gcc-7.2.0/gcc/config/i386/t-x86_64-elf
+
+# Then add it to the build files
+awk '/x86_64-\*-elf\*)/ { print; print "	tmake_file=\"${tmake_file} i386/t-x86_64-elf\" # include the new multilib configuration"; next }1' gcc-7.2.0/gcc/config.gcc > tmp.txt
+mv tmp.txt gcc-7.2.0/gcc/config.gcc
+
 for TARGET in $@; do
 	echo "Creating target $TARGET..."
 
@@ -89,7 +97,7 @@ for TARGET in $@; do
 	# Binutils for i386-elf
 	cd build-binutils-$TARGET
 	../binutils-2.29/configure --target=$TARGET --prefix="$PREFIX" --disable-nls --disable-werror --with-sysroot
-	make -j 4
+	make -j $CORES
 	make install
 
 	# GCC for i386-elf
@@ -99,9 +107,9 @@ for TARGET in $@; do
 	
 	# For x86-64 we need to patch the makefile to disable red zone and use mcmodel kernel
 	if [["$TARGET" = "x86_64*"]]; then
-		make all-target-libgcc -j $CORES CFLAGS_FOR_TARGET='-g -O2 -mcmodel=kernel -mno-red-zone' || true
-		sed -i 's/PICFLAG/DISABLED_PICFLAG/g' $TARGET/libgcc/Makefile
-		make all-target-libgcc -j $CORES CFLAGS_FOR_TARGET='-g -O2 -mcmodel=kernel -mno-red-zone'
+		make all-target-libgcc -j $CORES || true
+		sed -i 's/PICFLAG/DISABLED_PICFLAG/g' $TARGET/no-red-zone/mcmodel-kernel/libgcc/Makefile
+		make all-target-libgcc -j $CORES
 	else
 		make all-target-libgcc -j $CORES
 	fi

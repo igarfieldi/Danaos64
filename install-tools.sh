@@ -14,12 +14,6 @@ function contains() {
 
 TARGETS=("i386-elf" "x86_64-elf")
 
-# Request sudo
-if [ $EUID != 0 ]; then
-	sudo "$0" "$@"
-	exit $?
-fi
-
 # Default values for prefix and cores
 PREFIX="/usr"
 CORES=$(grep -c ^processor /proc/cpuinfo)
@@ -29,7 +23,7 @@ while getopts ":p:c:h" OPTION; do
 	case $OPTION in
 		p) PREFIX=$OPTARG;;
 		c) CORES=$OPTARG;;
-		h) echo "Usage: -c NO_THREADS -p INSTALL_PREFIX [TARGETS ...]"; exit 0;;
+		h) echo "Usage: -c NO_THREADS -p INSTALL_PREFIX [TARGETS ...]\nINSTALL_PREFIX defaults to \"/usr\", cores defaults to the number of processors available"; exit 0;;
 		\?) echo "Invalid option: $OPTARG"; exit 1;;
 		:) echo "Invalid option: $OPTARG requires an argument"; exit 1;;
 	esac
@@ -82,28 +76,37 @@ mv isl-0.18 gcc-7.2.0/isl
 mv cloog-0.18.4 gcc-7.2.0/cloog
 
 # Patch GCC (remove the wrong warning about too small types when using bitfield enums)
+# This may need to be adapted for different GCC versions
 sed -i -e '3586,3591d' gcc-7.2.0/gcc/cp/class.c
 
 for TARGET in $@; do
-	echo "Creating target $(TARGET)..."
+	echo "Creating target $TARGET..."
 
 	# Create the build directories
-	mkdir build-binutils-$TARGET
-	mkdir build-gcc-$TARGET
+	mkdir -p build-binutils-$TARGET
+	mkdir -p build-gcc-$TARGET
 
 	# Binutils for i386-elf
 	cd build-binutils-$TARGET
 	../binutils-2.29/configure --target=$TARGET --prefix="$PREFIX" --disable-nls --disable-werror --with-sysroot
 	make -j 4
-	sudo make install
+	make install
 
 	# GCC for i386-elf
 	cd ../build-gcc-$TARGET
 	../gcc-7.2.0/configure --target=$TARGET --prefix="$PREFIX" --disable-nls --without-headers --enable-languages=c,c++
 	make all-gcc -j $CORES
-	make all-target-libgcc -j $CORES
-	sudo make install-gcc
-	sudo make install-target-libgcc
+	
+	# For x86-64 we need to patch the makefile to disable red zone and use mcmodel kernel
+	if [["$TARGET" = "x86_64*"]]; then
+		make all-target-libgcc -j $CORES CFLAGS_FOR_TARGET='-g -O2 -mcmodel=kernel -mno-red-zone' || true
+		sed -i 's/PICFLAG/DISABLED_PICFLAG/g' $TARGET/libgcc/Makefile
+		make all-target-libgcc -j $CORES CFLAGS_FOR_TARGET='-g -O2 -mcmodel=kernel -mno-red-zone'
+	else
+		make all-target-libgcc -j $CORES
+	fi
+	make install-gcc
+	make install-target-libgcc
 	
 	# Clean up a bit
 	cd ..

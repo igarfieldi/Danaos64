@@ -36,13 +36,13 @@ KERNELOBJ			:= $(patsubst %/crti.o,,$(KERNELOBJ))
 KERNELOBJ			:= $(patsubst %/crtn.o,,$(KERNELOBJ))
 
 # GCC-specific files responsible for (amongst other things) calling global con- and destructors
-KERNELCRTBEGIN		:= $(shell $(CC) $(CFLAGS) -print-file-name=crtbegin.o)
-KERNELCRTEND		:= $(shell $(CC) $(CFLAGS) -print-file-name=crtend.o)
+KERNELCRTBEGIN		:= $(shell $(CC) $(TARGETCPPFLAGS) -print-file-name=crtbegin.o)
+KERNELCRTEND		:= $(shell $(CC) $(TARGETCPPFLAGS) -print-file-name=crtend.o)
 KERNELCRTI			:= $(patsubst $(KERNELDIR)/$(SRCDIR)/%,$(KERNELDIR)/$(OBJDIR)/%,$(shell $(FIND) $(KERNELDIR)/$(SRCDIR)/arch/$(ISA) -name "crti.s"))
 KERNELCRTN			:= $(patsubst $(KERNELDIR)/$(SRCDIR)/%,$(KERNELDIR)/$(OBJDIR)/%,$(shell $(FIND) $(KERNELDIR)/$(SRCDIR)/arch/$(ISA) -name "crtn.s"))
 KERNELCRTI			:= $(subst .s,.o,$(KERNELCRTI))
 KERNELCRTN			:= $(subst .s,.o,$(KERNELCRTN))
-LIBGCC				:= $(shell $(LD) -print-libgcc-file-name)
+LIBGCC				:= $(shell $(CC) $(TARGETCPPFLAGS) -print-libgcc-file-name)
 
 # Dependencies for the build process
 KERNELDEP			:= $(patsubst %.o,%.d,$(KERNELOBJ))

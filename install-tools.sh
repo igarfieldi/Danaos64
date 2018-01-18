@@ -104,16 +104,17 @@ for TARGET in $@; do
 	cd ../build-gcc-$TARGET
 	../gcc-7.2.0/configure --target=$TARGET --prefix="$PREFIX" --disable-nls --without-headers --enable-languages=c,c++
 	make all-gcc -j $CORES
+	make install-gcc
 	
 	# For x86-64 we need to patch the makefile to disable red zone and use mcmodel kernel
 	if [["$TARGET" = "x86_64*"]]; then
 		make all-target-libgcc -j $CORES || true
 		sed -i 's/PICFLAG/DISABLED_PICFLAG/g' $TARGET/no-red-zone/mcmodel-kernel/libgcc/Makefile
+		sed -i 's/PICFLAG/DISABLED_PICFLAG/g' $TARGET/mcmodel-kernel/libgcc/Makefile
 		make all-target-libgcc -j $CORES
 	else
 		make all-target-libgcc -j $CORES
 	fi
-	make install-gcc
 	make install-target-libgcc
 	
 	# Clean up a bit

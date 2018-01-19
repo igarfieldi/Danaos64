@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Function to check for required program
+function requires() {
+	command -v $1 >/dev/null 2>&1 || { echo "Error: install-tools requires '$1'!" >&2; exit 1; }
+}
+
 # Function to check if array contains value
 function contains() {
 	local n=$#
@@ -37,6 +42,16 @@ while getopts ":p:c:h" OPTION; do
 done
 # Shift to get the parsed options out of the list
 shift $((OPTIND - 1))
+
+# Check if all the necessary programs are installed
+requires "make"
+requires "gcc"
+requires "g++"
+requires "wget"
+requires "tar"
+requires "sed"
+requires "awk"
+requires "grep"
 
 # Check target validity
 for TARGET in $@; do
@@ -143,7 +158,7 @@ for TARGET in $@; do
 		cd build-gcc-$TARGET
 		
 		# For x86-64 we need to patch the makefile to disable red zone and use mcmodel kernel
-		if [[ "$TARGET" =~ "x86_64*" ]]; then
+		if [[ "$TARGET" =~ x86_64* ]]; then
 			make all-target-libgcc -j $CORES || true
 			sed -i 's/PICFLAG/DISABLED_PICFLAG/g' $TARGET/no-red-zone/mcmodel-kernel/libgcc/Makefile
 			sed -i 's/PICFLAG/DISABLED_PICFLAG/g' $TARGET/mcmodel-kernel/libgcc/Makefile

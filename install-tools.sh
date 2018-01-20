@@ -17,12 +17,10 @@ function contains() {
 	return "1"
 }
 
-MAKEBINUTILS=0
-MAKEGCC=0
+MAKEBINUTILS=1
+MAKEGCC=1
 MAKELIBGCC=1
-CLEANUPPRE=0
-CLEANUPSRC=0
-CLEANUPBUILD=0
+CLEANUP=1
 
 TARGETS=("i386-elf" "x86_64-elf")
 
@@ -31,15 +29,21 @@ PREFIX="/usr"
 CORES=$(grep -c ^processor /proc/cpuinfo)
 
 # Parse the options
-while getopts ":p:c:h" OPTION; do
-	case $OPTION in
-		p) PREFIX=$OPTARG;;
-		c) CORES=$OPTARG;;
-		h) echo "Usage: -c NO_THREADS -p INSTALL_PREFIX [TARGETS ...]\nINSTALL_PREFIX defaults to \"/usr\", cores defaults to the number of processors available"; exit 0;;
-		\?) echo "Invalid option: $OPTARG"; exit 1;;
-		:) echo "Invalid option: $OPTARG requires an argument"; exit 1;;
-	esac
+OPTS=`getopt -o c:p: --long cores:,prefix:,no-binutils,no-gcc,no-libgcc,no-cleanup -n 'parse-options' -- "$@"`
+
+while true; do
+  case "$1" in
+    -c | --cores ) CORES=$2; shift; shift ;;
+    -p | --prefix ) PREFIX="$2"; shift; shift ;;
+    --no-binutils ) MAKEBINUTILS=0; shift ;;
+    --no-gcc ) MAKEGCC=0; shift ;;
+    --no-libgcc ) MAKELIBGCC=0; shift ;;
+    --no-cleanup ) CLEANUP=0; shift ;;
+    -- ) shift; break ;;
+    * ) break ;;
+  esac
 done
+
 # Shift to get the parsed options out of the list
 shift $((OPTIND - 1))
 
@@ -68,7 +72,7 @@ if [[ $MAKEBINUTILS == 1 ]]; then
 	wget -nc http://ftp.gnu.org/gnu/binutils/binutils-2.29.tar.xz
 	tar -xf binutils-2.29.tar.xz
 	
-	if [[ $CLEANUPPRE == 1 ]]; then
+	if [[ $CLEANUP == 1 ]]; then
 		rm -f binutils-2.29.tar.xz
 	fi
 fi
@@ -88,7 +92,7 @@ if [[ $MAKEGCC == 1 ]] || [[ $MAKELIBGCC == 1 ]]; then
 	tar -xf isl-0.18.tar.xz
 	tar -xf cloog-0.18.4.tar.gz
 	
-	if [[ $CLEANUPPRE == 1 ]]; then
+	if [[ $CLEANUP == 1 ]]; then
 		# Delete the now superfluous archives
 		rm -f gcc-7.2.0.tar.xz
 		rm -f gmp-6.1.2.tar.xz
@@ -183,7 +187,7 @@ for TARGET in $@; do
 		cd ..
 	fi
 	
-	if [[ $CLEANUPBUILD == 1 ]]; then
+	if [[ $CLEANUP == 1 ]]; then
 		# Clean up build files
 		rm -rf build-binutils-$TARGET
 		rm -rf build-gcc-$TARGET
@@ -193,7 +197,7 @@ done
 # Disable abort-on-error again
 set -e
 
-if [[ $CLEANUPSRC == 1 ]]; then
+if [[ $CLEANUP == 1 ]]; then
 	# Clean up source files
 	rm -rf gcc-7.2.0
 	rm -rf binutils-2.29

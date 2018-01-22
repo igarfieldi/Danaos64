@@ -63,7 +63,7 @@ namespace hal {
                 // TODO: ensure that we stay within the addressable memory range!
                 // Has to be free and not come before the kernel
                 if(entry.type == area_type::AVAILABLE &&
-                            entry.addr >= reinterpret_cast<uintptr_t>(&KERNEL_PHYS_BEGIN) &&
+                            entry.addr <= reinterpret_cast<uintptr_t>(&KERNEL_PHYS_BEGIN) &&
                             entry.addr + entry.len > reinterpret_cast<uintptr_t>(&KERNEL_PHYS_END)) {
                     // Ensure enough space when considering the kernel
                     if((reinterpret_cast<uintptr_t>(&KERNEL_PHYS_END) < entry.addr) ||
@@ -113,6 +113,7 @@ namespace hal {
                                 reinterpret_cast<uintptr_t>(&KERNEL_PHYS_END));
             kernel::m_console.print("Bitmap: [] - []\n", bitmap_address, bitmap_address + bitmap_size);
 
+			
             virt_mem_manager::instance().init();
         }
     };

@@ -1,10 +1,37 @@
 #ifndef DANAOS_KERNEL_HAL_UTIL_BITMAP_H_
 #define DANAOS_KERNEL_HAL_UTIL_BITMAP_H_
 
+#include <stdint.h>
+#include <stddef.h>
 #include "libk/numeric_limits.h"
 //#include <limits.h>
 
 namespace util {
+
+    template < class T >
+    constexpr T get_mask(size_t pos, size_t length) {
+        return ((1 << length) - 1) << pos;
+    }
+
+    template < class T >
+    constexpr T set_bits(T word, size_t pos, size_t length, T val) {
+        return (word & ~get_mask<T>(pos, length)) | (val & get_mask<T>(pos, length));
+    }
+
+    template < class T >
+    constexpr T set_bit(T word, size_t pos, bool val) {
+        return (word & ~get_mask<T>(pos, 1)) | (-val & get_mask<T>(pos, 1));
+    }
+
+    template < class T >
+    constexpr T get_bits(T word, size_t pos, size_t length) {
+        return word & ~get_mask<T>(pos, length);
+    }
+
+    template < class T >
+    constexpr T get_bit(T word, size_t pos) {
+        return word & ~get_mask<T>(pos, 1);
+    }
 
     // TODO: specialization for word-size so we can use special CPU instructions!
     template < class B >

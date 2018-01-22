@@ -7,7 +7,7 @@ extern uintptr_t KERNEL_VIRT_OFFSET;
 extern uintptr_t KERNEL_PHYS_BEGIN;
 extern uintptr_t KERNEL_VIRT_BEGIN;
 extern uintptr_t KERNEL_VIRT_END;
-extern hal::page_directory_entry _page_directory;
+extern hal::page_dir_entry _page_directory;
 
 namespace hal {
 
@@ -27,7 +27,7 @@ namespace hal {
         uintptr_t virtual_offset = reinterpret_cast<uintptr_t>(&KERNEL_VIRT_OFFSET);
         uintptr_t page_dir_phys = reinterpret_cast<uintptr_t>(m_page_directory) - virtual_offset;
         // Make the page tables accessible
-        m_page_directory[page_table::ENTRIES - 1] = page_directory_entry(true, true, false, true, true, false, page_dir_phys);
+        m_page_directory[page_table::ENTRIES - 1] = page_dir_entry(page_dir_phys, true, true, false, true, true);
     }
 
     virt_mem_manager &virt_mem_manager::instance() noexcept {
@@ -56,13 +56,13 @@ namespace hal {
         size_t dir = dir_index(virt);
         size_t table = table_index(virt);
 
-        if(!m_page_directory[dir].present) {
-            m_page_directory[dir] = page_directory_entry(true, true, true,
-                true, false, false, phys_mem_manager::instance().alloc_any());
+        if(!m_page_directory[dir].is_present()) {
+            m_page_directory[dir] = page_dir_entry(phys_mem_manager::instance().alloc_any(),
+                    true, true, true, true, false);
             m_tables[dir] = page_table();
         }
 
-        m_tables[dir][table] = page(true, !read_only, !kernel, true, false, global, phys);
+        m_tables[dir][table] = page_table_entry(phys, true, !read_only, !kernel, true, false, global);
         return virt;
     }
 
@@ -72,13 +72,13 @@ namespace hal {
             size_t dir = dir_index(virt + curr_page*PAGE_SIZE);
             size_t table = table_index(virt + curr_page*PAGE_SIZE);
 
-            if(!m_page_directory[dir].present) {
-                m_page_directory[dir] = page_directory_entry(true, true, true,
-                    true, false, false, phys_mem_manager::instance().alloc_any());
+            if(!m_page_directory[dir].is_present()) {
+                m_page_directory[dir] = page_dir_entry(phys_mem_manager::instance().alloc_any(),
+                        true, true, true, true, false);
                 m_tables[dir] = page_table();
             }
 
-            m_tables[dir][table] = page(true, !read_only, !kernel, true, false, global, phys + curr_page*PAGE_SIZE);
+            m_tables[dir][table] = page_table_entry(phys + curr_page*PAGE_SIZE, true, !read_only, !kernel, true, false, global);
         }
 
         return virt;
@@ -90,13 +90,13 @@ namespace hal {
             size_t dir = dir_index(curr_virt);
             size_t table = table_index(curr_virt);
 
-            if(!m_page_directory[dir].present) {
-                m_page_directory[dir] = page_directory_entry(true, true, true,
-                    true, false, false, phys_mem_manager::instance().alloc_any());
+            if(!m_page_directory[dir].is_present()) {
+                m_page_directory[dir] = page_dir_entry(phys_mem_manager::instance().alloc_any(),
+                        true, true, true, true, false);
                 m_tables[dir] = page_table();
             }
 
-            m_tables[dir][table] = page(true, !read_only, !kernel, true, false, global, phys);
+            m_tables[dir][table] = page_table_entry(phys, true, !read_only, !kernel, true, false, global);
             curr_virt += PAGE_SIZE;
             phys += PAGE_SIZE;
         }

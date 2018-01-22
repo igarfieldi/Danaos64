@@ -28,10 +28,6 @@ extern "C" void kernelMain(uint32_t magic, uintptr_t info) {
         while(true);
     }
 
-    
-    kernel::m_console.print("Loaded!");
-    while(true);
-
     multiboot_info *mbinfo = reinterpret_cast<multiboot_info*>(info);
     multiboot_tag_elf_sections *elf_sections = nullptr;
     multiboot_tag_framebuffer_common *framebuffer = nullptr;

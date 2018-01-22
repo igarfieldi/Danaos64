@@ -18,9 +18,6 @@
 .code64
 _kernel_entry:
 	// Re-set the stack
-.test:
-    hlt
-    jmp         .test
     movabs      $KERNEL_STACK_SIZE, %rcx
     movabs      $kernel_stack, %rsp
 	addq		%rcx, %rsp

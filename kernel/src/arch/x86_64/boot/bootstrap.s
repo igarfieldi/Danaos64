@@ -8,7 +8,7 @@
 #define ASM
 
 .global			_entry
-.global			_pml4, _pdpe_identity, _pdpe_kernel
+.global			_pml4, _pdp, _pd
 .extern			_kernel_entry
 
 // Multiboot2 header constants
@@ -16,7 +16,6 @@
 .set			ARCHITECTURE,			    0
 // Set the entry address for higher-half kernel
 .set			KERNEL_VIRTUAL_OFFSET,	    0xFFFFFFFF80000000
-.set			KERNEL_PML4_INDEX,		    511//KERNEL_VIRTUAL_OFFSET >> 38
 // Constants for paging structure
 .set            LONGMODE_MSR,               0xC0000080
 .set			CR0_PAGING,				    0x80000000
@@ -165,19 +164,19 @@ longmode_temp:
 // Other entry is for mapping the kernel virtual memory at -2GB back to address 0 physical memory
 _pml4:
 	.quad		(_pdp - KERNEL_VIRTUAL_OFFSET) + (PAGING_PRESENT + PAGING_RW)		// Maps 0x0000'0000'0000 - 0x007F'FFFF'FFFF
-	.skip		PAGING_PML4_ENTRY_SIZE * PAGING_PML4_ENTRIES - 2, 0
+	.skip		(PAGING_PML4_ENTRIES - 2) * PAGING_PML4_ENTRY_SIZE, 0
     .quad       (_pdp - KERNEL_VIRTUAL_OFFSET) + (PAGING_PRESENT + PAGING_RW)		// Maps 0xFF80'0000'0000 - 0xFFFF'FFFF'FFFF
 
 // First entry here is for identity mapping the physical memory
 // Other entry is for mapping the kernel virtual memory at -2GB back to address 0 physical memory
 _pdp:
 	.quad		(_pd - KERNEL_VIRTUAL_OFFSET) + (PAGING_PRESENT + PAGING_RW)		// Maps 0x0000'0000'0000 - 0x0000'3FFF'FFFF
-	.skip		PAGING_PDP_ENTRY_SIZE * PAGING_PDP_ENTRIES - 3, 0
+	.skip		(PAGING_PDP_ENTRIES - 3) * PAGING_PDP_ENTRY_SIZE, 0
 	.quad		(_pd - KERNEL_VIRTUAL_OFFSET) + (PAGING_PRESENT + PAGING_RW)		// Maps 0x007F'8000'0000 - 0x007F'BFFF'FFFF
-	.skip		1, 0
+	.skip		1 * PAGING_PDP_ENTRY_SIZE, 0
 
 _pd:
 	.quad		0x00000000 + (PAGING_PRESENT + PAGING_LARGE_SIZE + PAGING_RW)		// Maps 0x0000'0000'0000 - 0x0000'001F'FFFF
 	.quad		0x00200000 + (PAGING_PRESENT + PAGING_LARGE_SIZE + PAGING_RW)		// Maps 0x0000'0020'0000 - 0x0000'003F'FFFF
 	.quad		0x00400000 + (PAGING_PRESENT + PAGING_LARGE_SIZE + PAGING_RW)		// Maps 0x0000'0040'0000 - 0x0000'005F'FFFF
-	.skip		PAGING_PD_ENTRY_SIZE * PAGING_PD_ENTRIES - 3, 0
+	.skip		(PAGING_PD_ENTRIES - 3) * PAGING_PD_ENTRY_SIZE, 0

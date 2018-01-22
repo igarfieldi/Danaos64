@@ -12,6 +12,8 @@ namespace hal {
         static constexpr size_t PAGE_FRAME_SIZE = 4096;
 
     private:
+    	static constexpr size_t INIT_BITMAP_SIZE = 0x20000;
+    
         static constexpr size_t get_page_frame(uintptr_t address) noexcept {
             return address / PAGE_FRAME_SIZE;
         }
@@ -26,8 +28,6 @@ namespace hal {
 
         phys_mem_manager() noexcept;
 
-        size_t m_page_frame_count;
-
         util::bitmap<size_t> m_phys_bitmap;
     
     public:
@@ -38,9 +38,13 @@ namespace hal {
 
         static phys_mem_manager &instance() noexcept;
 
-        void init(uintptr_t bitmap_address, size_t page_frames) noexcept;
+        void init(uintptr_t bitmap_address, size_t page_frames, bool clear) noexcept;
         void change_bitmap_addr(uintptr_t addr) noexcept;
         uintptr_t get_bitmap_addr() const noexcept;
+        
+        constexpr size_t page_frame_count() const noexcept {
+        	return m_phys_bitmap.bits();
+        }
 
         bool is_available_frame(size_t page_frame) const noexcept;
         bool is_available_frame(size_t page_frame, size_t frame_count) const noexcept;

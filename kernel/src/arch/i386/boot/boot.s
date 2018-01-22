@@ -10,6 +10,7 @@
 
 .global			_entry
 .global			_page_directory
+.global			_phys_bitmap
 .extern			KERNEL_VIRT_OFFSET
 
 .code32
@@ -144,6 +145,12 @@ higher_half:
 .align			4096
 _page_directory:
 	.skip		PAGING_PD_ENTRY_SIZE * PAGING_PD_ENTRIES, 0
+	
+// The initial bitmap for physical memory. We need this to solve the hen-egg-problem of finding
+// memory for the bitmap but also needing to know where we can put it.
+// This, however, inflates the kernel size
+_phys_bitmap:
+	.skip		0x20000, 0		// 4GB of RAM / (Page size * 8 bits per byte)
 
 // Read-only data segment
 .section .rodata

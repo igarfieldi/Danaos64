@@ -68,19 +68,19 @@ namespace util {
         bitmap(uintptr_t addr, size_t bits) noexcept : bitmap(reinterpret_cast<block_type *>(addr), bits) {
         }
 
-        size_t bits() const noexcept {
+        constexpr size_t bits() const noexcept {
             return m_bits;
         }
 
-        size_t size() const noexcept {
+        constexpr size_t size() const noexcept {
             return m_blocks;
         }
 
-        block_type *data() {
+        constexpr block_type *data() {
             return m_ptr;
         }
 
-        const block_type *data() const {
+        constexpr const block_type *data() const {
             return m_ptr;
         }
         

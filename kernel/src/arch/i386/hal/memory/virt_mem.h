@@ -11,6 +11,26 @@ namespace hal {
     class virt_mem_manager {
     public:
         static constexpr size_t PAGE_SIZE = 4096;
+    	
+    	static constexpr size_t page_count(size_t bytes) noexcept {
+    		return (bytes - 1) / virt_mem_manager::PAGE_SIZE + 1;
+    	}
+    	
+    	static constexpr uintptr_t align_down(size_t addr) noexcept {
+    		return (addr / virt_mem_manager::PAGE_SIZE) * virt_mem_manager::PAGE_SIZE;
+    	}
+    	
+    	static constexpr uintptr_t align_up(size_t addr) noexcept {
+    		return page_count(addr) * virt_mem_manager::PAGE_SIZE;
+    	}
+    	
+    	constexpr uintptr_t vkernel_start() noexcept {
+    		return m_vkernel_start;
+    	}
+    	
+    	constexpr uintptr_t vkernel_end() noexcept {
+    		return m_vkernel_start;
+    	}
 
     private:
         static constexpr size_t dir_index(uintptr_t address) noexcept {
@@ -29,6 +49,9 @@ namespace hal {
 
         page_dir_entry *m_page_directory;
         page_table *m_tables;
+        
+        uintptr_t m_vkernel_start;
+        uintptr_t m_vkernel_end;
 
         virt_mem_manager() noexcept;
     

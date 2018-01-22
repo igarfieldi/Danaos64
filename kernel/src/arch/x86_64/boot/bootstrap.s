@@ -9,6 +9,7 @@
 
 .global			_entry
 .global			_pml4, _pdp, _pd
+.global			_phys_bitmap
 .extern			_kernel_entry
 
 // Multiboot2 header constants
@@ -175,8 +176,15 @@ _pdp:
 	.quad		(_pd - KERNEL_VIRTUAL_OFFSET) + (PAGING_PRESENT + PAGING_RW)		// Maps 0x007F'8000'0000 - 0x007F'BFFF'FFFF
 	.skip		1 * PAGING_PDP_ENTRY_SIZE, 0
 
-_pd:
+_pd: // TODO: fill this at runtime
 	.quad		0x00000000 + (PAGING_PRESENT + PAGING_LARGE_SIZE + PAGING_RW)		// Maps 0x0000'0000'0000 - 0x0000'001F'FFFF
 	.quad		0x00200000 + (PAGING_PRESENT + PAGING_LARGE_SIZE + PAGING_RW)		// Maps 0x0000'0020'0000 - 0x0000'003F'FFFF
 	.quad		0x00400000 + (PAGING_PRESENT + PAGING_LARGE_SIZE + PAGING_RW)		// Maps 0x0000'0040'0000 - 0x0000'005F'FFFF
 	.skip		(PAGING_PD_ENTRIES - 3) * PAGING_PD_ENTRY_SIZE, 0
+	
+// The initial bitmap for physical memory. We need this to solve the hen-egg-problem of finding
+// memory for the bitmap but also needing to know where we can put it.
+// This, however, inflates the kernel size
+_phys_bitmap:
+	.skip		0x20000, 0		// 4GB of RAM / (Page size * 8 bits per byte)
+

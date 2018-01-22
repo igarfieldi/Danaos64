@@ -10,6 +10,9 @@ SECTIONS
 
 	. = KERNEL_PHYS_OFFSET;
 
+	KERNEL_PHYS_BEGIN = .;
+	KERNEL_VIRT_BEGIN = . + KERNEL_VIRT_OFFSET;
+
 	.multiboot ALIGN(4K) : AT(ADDR(.multiboot))
 	{
 		*(.multiboot)
@@ -17,9 +20,6 @@ SECTIONS
 	}
 	
 	. += KERNEL_VIRT_OFFSET;
-
-	KERNEL_VIRT_BEGIN = .;
-	KERNEL_PHYS_BEGIN = KERNEL_VIRT_BEGIN - KERNEL_VIRT_OFFSET;
 
 	/* Kernel code */
 	.text ALIGN(4K) : AT(ADDR(.text) - KERNEL_VIRT_OFFSET)
@@ -74,6 +74,9 @@ SECTIONS
     {
     	*(.comment)
     }
+    
+    /* Align to page boundary */
+    . = ALIGN(4K);
 
 	KERNEL_VIRT_END = .;
 	KERNEL_PHYS_END = KERNEL_VIRT_END - KERNEL_VIRT_OFFSET;

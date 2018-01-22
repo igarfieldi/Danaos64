@@ -21,7 +21,8 @@ namespace hal {
     }
 
     virt_mem_manager::virt_mem_manager() noexcept : m_page_directory(&_page_directory),
-            m_tables(reinterpret_cast<page_table *>(PAGE_SIZE * page_table::ENTRIES * (page_table::ENTRIES - 1))) {
+            m_tables(reinterpret_cast<page_table *>(PAGE_SIZE * page_table::ENTRIES * (page_table::ENTRIES - 1))),
+            m_vkernel_start(0), m_vkernel_end(0) {
         // The last page directory shall point to our page tables so we can modify them by accessing that
 
         uintptr_t virtual_offset = reinterpret_cast<uintptr_t>(&KERNEL_VIRT_OFFSET);
@@ -49,6 +50,10 @@ namespace hal {
                     true, false, false);
 
         set_page_directory(page_dir_phys);
+        
+        // Set the virtual memory range that the kernel can use for allocation
+        m_vkernel_start = align_up(reinterpret_cast<uintptr_t>(&KERNEL_VIRT_END));
+        m_vkernel_end = align_down(0xFFFFFFFF);
     }
 
     uintptr_t virt_mem_manager::map(uintptr_t virt, uintptr_t phys, bool kernel,

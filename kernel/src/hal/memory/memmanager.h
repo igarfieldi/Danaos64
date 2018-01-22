@@ -23,7 +23,10 @@ namespace hal {
 
     class memory_manager {
     private:
-        memory_manager();
+    	uintptr_t m_vkernel_curr;
+    	uintptr_t m_vkernel_alloced;
+    	
+        memory_manager() noexcept;
     
     public:
         memory_manager(const memory_manager&) = delete;
@@ -31,34 +34,32 @@ namespace hal {
         memory_manager &operator=(const memory_manager&) = delete;
         memory_manager &operator=(memory_manager&&) = delete;
 
-        static memory_manager &instance();
+        static memory_manager &instance() noexcept;
 
         template < class map_type >
-        void init(map_type map) {
+        void init(map_type map) noexcept {
             using area_type = typename map_type::entry_type::area_type;
 
-            uintptr_t kernel_phys_begin = reinterpret_cast<uintptr_t>(&KERNEL_PHYS_BEGIN);
-            uintptr_t kernel_phys_end = reinterpret_cast<uintptr_t>(&KERNEL_PHYS_END);
-
-            // Compute how many page frames of physical RAM we have
+			// Do the first (provisional) initialization of the pmm with the bitmap alloc'ed in the binary
+			(void) hal::phys_mem_manager::instance();
+            
+            // Mark the non-accessible page frames and count the highest available page frame
             uint64_t highest_address = 0;
             for(auto &entry : map) {
                 // While we're here mark memory below 1MBB as unavailable because it contains BIOS stuff we don't wanna overwrite
-                if(entry.addr < 0x100000) {
-                    entry.type = area_type::RESERVED;
+                if(entry.type != area_type::AVAILABLE) {
+                	hal::phys_mem_manager::instance().alloc_range(entry.addr, entry.len);
+                } else if(entry.addr + entry.len > highest_address) {
+                    highest_address = entry.addr + entry.len;
                 }
+                
 
                 kernel::m_console.print("Address: [], Length: {}, Type: {}\n",
                     entry.addr, entry.len, static_cast<uint32_t>(entry.type));
-
-                if(entry.addr + entry.len > highest_address) {
-                    highest_address = entry.addr + entry.len;
-                }
             }
             size_t page_frame_count = highest_address / phys_mem_manager::PAGE_FRAME_SIZE;
 
-            // TODO: also allow bitmap to go before the kernel!
-
+			/*
             // Now find space where we can put our bitmap
             size_t bitmap_size = page_frame_count / CHAR_BIT;
             uintptr_t bitmap_address = 0;
@@ -93,8 +94,17 @@ namespace hal {
                         }
                     }
                 }
+            }*/
+            
+			// Mark kernel frames and everything below 1MB as used
+			hal::phys_mem_manager::instance().alloc_range(0, reinterpret_cast<uintptr_t>(&KERNEL_PHYS_END));
+            
+            // Check if we need a larger bitmap
+            if(page_frame_count > hal::phys_mem_manager::instance().page_frame_count()) {
+            	kernel::m_console.print("Warning: more RAM installed than currently handleable by PMM!\n");
             }
 
+			/*
             // No address means no memory!
             if(bitmap_address == 0) {
                 kernel::panic("Couldn't find space for the memory bitmap!");
@@ -110,14 +120,23 @@ namespace hal {
                 if(entry.type != area_type::AVAILABLE) {
                     phys_mem_manager::instance().alloc_range(entry.addr, entry.len);
                 }
-            }
+            }*/
 
             kernel::m_console.print("Kernel: [] - []\n", reinterpret_cast<uintptr_t>(&KERNEL_PHYS_BEGIN),
                                 reinterpret_cast<uintptr_t>(&KERNEL_PHYS_END));
-            kernel::m_console.print("Bitmap: [] - []\n", bitmap_address, bitmap_address + bitmap_size);
+            //kernel::m_console.print("Bitmap: [] - []\n", bitmap_address, bitmap_address + bitmap_size);
 
 			
             virt_mem_manager::instance().init();
+            m_vkernel_curr = virt_mem_manager::instance().vkernel_start();
+            m_vkernel_alloced = virt_mem_manager::instance().vkernel_start();
+        }
+        
+        uintptr_t kernel_alloc_pages(uintptr_t phys, size_t size) noexcept;
+        
+        template < class T >
+        T *kernel_alloc_pages(T *phys) noexcept {
+        	return reinterpret_cast<T*>(kernel_alloc_pages(reinterpret_cast<uintptr_t>(phys), sizeof(T)));
         }
     };
 

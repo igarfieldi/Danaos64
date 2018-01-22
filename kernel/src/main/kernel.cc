@@ -93,13 +93,19 @@ extern "C" void kernelMain(uint32_t magic, uintptr_t info) {
     uintptr_t fb_addr = 0xB8000;
     uintptr_t fb_width = 80;
     uintptr_t fb_height = 25;
+    // Save elf section size for mapping
+    size_t elf_section_size = 0;
 
     if(framebuffer != nullptr) {
         fb_addr = framebuffer->framebuffer_addr;
         fb_width = framebuffer->framebuffer_width;
         fb_height = framebuffer->framebuffer_height;
     }
+    if(elf_sections != nullptr) {
+    	elf_section_size = elf_sections->size;
+    }
     
+    // Initialize memory management
     if(memmap != nullptr) {
         hal::memory_manager::instance().init(hal::multiboot_memmap(*memmap));
     }
@@ -107,11 +113,10 @@ extern "C" void kernelMain(uint32_t magic, uintptr_t info) {
     // Initialize framebuffer	
     devices::cga::instance().init(fb_addr, fb_width, fb_height);
 
-    /*if(elf_sections != nullptr) {
-        // TODO: make those addresses virtual!
-		kernel::m_elf_lookup.init(elf_sections);
-		debug::backtrace(2);
-    }*/
+    if(elf_sections != nullptr) {
+		//kernel::m_elf_lookup.init(elf_sections, elf_section_size);
+		//debug::backtrace(2);
+    }
 
     kernel::m_console.print("Kernel loaded!\n");
 

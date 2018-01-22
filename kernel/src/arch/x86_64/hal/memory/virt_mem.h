@@ -15,9 +15,28 @@ namespace hal {
     class virt_mem_manager {
     public:
         static constexpr size_t PAGE_SIZE = 4096;
+    	
+    	static constexpr size_t page_count(size_t bytes) noexcept {
+    		return (bytes - 1) / virt_mem_manager::PAGE_SIZE + 1;
+    	}
+    	
+    	static constexpr uintptr_t align_down(size_t addr) noexcept {
+    		return (addr / virt_mem_manager::PAGE_SIZE) * virt_mem_manager::PAGE_SIZE;
+    	}
+    	
+    	static constexpr uintptr_t align_up(size_t addr) noexcept {
+    		return page_count(addr) * virt_mem_manager::PAGE_SIZE;
+    	}
+    	
+    	constexpr uintptr_t vkernel_start() noexcept {
+    		return m_vkernel_start;
+    	}
+    	
+    	constexpr uintptr_t vkernel_end() noexcept {
+    		return m_vkernel_start;
+    	}
 
     private:
-        
 
         /*static constexpr uintptr_t sign_extend(uintptr_t address) noexcept {
             // AMD64 demands that the top 16 bits match bit 47
@@ -61,13 +80,15 @@ namespace hal {
         void map_pre_paging(uintptr_t virt, uintptr_t phys);
 
 
-
         const uintptr_t VIRT_OFFSET;
         page_map *m_page_map_phys;
         page_map *m_page_map;
         page_dir_ptr *m_page_dir_ptr;
         page_dir *m_page_dir;
         page_table *m_page_table;
+        
+        uintptr_t m_vkernel_start;
+        uintptr_t m_vkernel_end;
         
         virt_mem_manager() noexcept;
     

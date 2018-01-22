@@ -61,7 +61,8 @@ namespace hal {
             m_page_map(reinterpret_cast< page_map *>(PAGE_MAP_REC)),
             m_page_dir_ptr(reinterpret_cast< page_dir_ptr *>(PAGE_DIR_PTR_REC)),
             m_page_dir(reinterpret_cast< page_dir *>(PAGE_DIR_REC)),
-            m_page_table(reinterpret_cast< page_table *>(PAGE_TBL_REC)) {
+            m_page_table(reinterpret_cast< page_table *>(PAGE_TBL_REC)),
+            m_vkernel_start(0), m_vkernel_end(0) {
     }
 
     virt_mem_manager &virt_mem_manager::instance() noexcept {
@@ -100,11 +101,14 @@ namespace hal {
         // Set the new page directory
         set_page_directory(page_map_phys);
 
-
-        // Free the (now useless) old-page-directory page frames
-        //phys_mem_manager::instance().free_address(reinterpret_cast<uintptr_t>(&_pml4));
-        //phys_mem_manager::instance().free_address(reinterpret_cast<uintptr_t>(&_pdp));
-        //phys_mem_manager::instance().free_address(reinterpret_cast<uintptr_t>(&_pd));
+        // Free the (now useless) old page-directory page frames
+        phys_mem_manager::instance().free_address(reinterpret_cast<uintptr_t>(&_pml4) - VIRT_OFFSET);
+        phys_mem_manager::instance().free_address(reinterpret_cast<uintptr_t>(&_pdp) - VIRT_OFFSET);
+        phys_mem_manager::instance().free_address(reinterpret_cast<uintptr_t>(&_pd) - VIRT_OFFSET);
+        
+        // Set the virtual memory range that the kernel can use for allocation
+        m_vkernel_start = align_up(virt_end);
+        m_vkernel_end = align_down(0xFFFFFFFFFFFFFFFF);
     }
 
     uintptr_t virt_mem_manager::map(uintptr_t virt, uintptr_t phys, bool kernel,

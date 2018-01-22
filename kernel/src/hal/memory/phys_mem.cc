@@ -1,8 +1,17 @@
 #include "phys_mem.h"
 
+#include "main/kernel.h"
+extern size_t _phys_bitmap;
+extern uintptr_t KERNEL_VIRT_OFFSET;
+
 namespace hal {
 
-    phys_mem_manager::phys_mem_manager() noexcept : m_page_frame_count(0), m_phys_bitmap() {
+
+    phys_mem_manager::phys_mem_manager() noexcept : m_phys_bitmap() {
+    	// Since the bitmap is virtually addressed we need to account for that
+    	uintptr_t bitmap_addr = reinterpret_cast<uintptr_t>(&_phys_bitmap) - reinterpret_cast<uintptr_t>(&KERNEL_VIRT_OFFSET);
+    	kernel::m_console.print("Physical bitmap address: []\n", bitmap_addr);
+    	this->init(bitmap_addr, 0x20000, true);
     }
 
     phys_mem_manager &phys_mem_manager::instance() noexcept {
@@ -10,12 +19,12 @@ namespace hal {
         return inst;
     }
     
-    void phys_mem_manager::init(uintptr_t bitmap_address, size_t page_frames) noexcept {
-        // Set the frame count
-        m_page_frame_count = page_frames;
-        // Set the bitmap at the given address and clear it
+    void phys_mem_manager::init(uintptr_t bitmap_address, size_t page_frames, bool clear) noexcept {
+        // Set the bitmap at the given address and clear it if so desired
         m_phys_bitmap = util::bitmap<size_t>(bitmap_address, page_frames);
-        m_phys_bitmap.clear();
+        if(clear) {
+        	m_phys_bitmap.clear();
+        }
         // Allocate whatever space the bitmap needs
         this->alloc_range(bitmap_address, page_frames / CHAR_BIT);
     }
@@ -112,7 +121,7 @@ namespace hal {
     uintptr_t phys_mem_manager::alloc_any(size_t frame_count) noexcept {
         // TODO: use more efficient algorithm!
         size_t curr_frame = m_phys_bitmap.get_first_clear();
-        while(curr_frame < m_page_frame_count) {
+        while(curr_frame < page_frame_count()) {
             size_t last_free = curr_frame;
             for(last_free = curr_frame + 1; last_free < curr_frame + frame_count; ++last_free) {
                 if(!is_available_frame(last_free)) {
@@ -126,7 +135,7 @@ namespace hal {
                 return curr_frame * PAGE_FRAME_SIZE;
             }
             curr_frame = last_free + 1;
-            while((curr_frame < m_page_frame_count) && !is_available_frame(curr_frame)) {
+            while((curr_frame < page_frame_count()) && !is_available_frame(curr_frame)) {
                 ++curr_frame;
             }
         }
@@ -135,7 +144,7 @@ namespace hal {
     
     uintptr_t phys_mem_manager::alloc_any_address(uintptr_t address_hint) noexcept {
         // TODO: use more efficient algorithm!
-        for(size_t frame = get_page_frame(address_hint); frame < m_page_frame_count; ++frame) {
+        for(size_t frame = get_page_frame(address_hint); frame < page_frame_count(); ++frame) {
             if(is_available_frame(frame)) {
                 m_phys_bitmap.set(frame);
                 return frame;
@@ -147,8 +156,8 @@ namespace hal {
     uintptr_t phys_mem_manager::alloc_any_address(uintptr_t address_hint, size_t frame_count) noexcept {
         size_t curr_frame = round_page_up(address_hint);
 
-        while(curr_frame < m_page_frame_count) {
-            while((curr_frame < m_page_frame_count) && (m_phys_bitmap.get(curr_frame))) {
+        while(curr_frame < page_frame_count()) {
+            while((curr_frame < page_frame_count()) && (m_phys_bitmap.get(curr_frame))) {
                 ++ curr_frame;
             }
 
@@ -172,7 +181,7 @@ namespace hal {
         // TODO: use more efficient algorithm!
         size_t curr_frame = m_phys_bitmap.get_first_clear();
         size_t frame_count = round_page_up(bytes);
-        while(curr_frame < m_page_frame_count) {
+        while(curr_frame < page_frame_count()) {
             size_t last_free = curr_frame;
             for(last_free = curr_frame + 1; last_free < curr_frame + frame_count; ++last_free) {
                 if(!is_available_frame(last_free)) {
@@ -186,7 +195,7 @@ namespace hal {
                 return curr_frame * PAGE_FRAME_SIZE;
             }
             curr_frame = last_free + 1;
-            while((curr_frame < m_page_frame_count) && !is_available_frame(curr_frame)) {
+            while((curr_frame < page_frame_count()) && !is_available_frame(curr_frame)) {
                 ++curr_frame;
             }
         }
@@ -198,8 +207,8 @@ namespace hal {
         size_t curr_frame = round_page_up(address_hint);
         size_t frame_count = round_page_up(bytes);
 
-        while(curr_frame < m_page_frame_count) {
-            while((curr_frame < m_page_frame_count) && (m_phys_bitmap.get(curr_frame))) {
+        while(curr_frame < page_frame_count()) {
+            while((curr_frame < page_frame_count()) && (m_phys_bitmap.get(curr_frame))) {
                 ++ curr_frame;
             }
 

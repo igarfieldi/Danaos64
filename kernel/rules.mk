@@ -42,7 +42,6 @@ KERNELCRTI			:= $(patsubst $(KERNELDIR)/$(SRCDIR)/%,$(KERNELDIR)/$(OBJDIR)/%,$(s
 KERNELCRTN			:= $(patsubst $(KERNELDIR)/$(SRCDIR)/%,$(KERNELDIR)/$(OBJDIR)/%,$(shell $(FIND) $(KERNELDIR)/$(SRCDIR)/arch/$(ISA) -name "crtn.s"))
 KERNELCRTI			:= $(subst .s,.o,$(KERNELCRTI))
 KERNELCRTN			:= $(subst .s,.o,$(KERNELCRTN))
-LIBGCC				:= $(shell $(CC) $(TARGETCPPFLAGS) -print-libgcc-file-name)
 
 # Dependencies for the build process
 KERNELDEP			:= $(patsubst %.o,%.d,$(KERNELOBJ))
@@ -65,7 +64,7 @@ $(KERNELELFSTRIPPED): $(KERNELELF)
 # The binary depends on the object files which have sources and the crti etc. files from gcc (the link order is important!)
 $(KERNELELF): $(KERNELCRTI) $(KERNELCRTBEGIN) $(KERNELOBJ) $(KERNELCRTEND) $(KERNELCRTN)
 	@echo "    (LD)      Linking..."
-	@$(LD) -o $(KERNELELF) -T $(KERNELLDSCRIPT) $(TARGETLDFLAGS) $^ $(LIBGCC)
+	@$(LD) -o $(KERNELELF) -T $(KERNELLDSCRIPT) $(TARGETLDFLAGS) $^ $(TARGETLIBGCC)
 
 # Include the dependency rules (if present; if not, we have to build the obj file anyway)
 -include $(KERNELDEP)

@@ -97,21 +97,38 @@ namespace hal {
         void set_global(bool val)                   { m_raw = util::set_bit(m_raw, 8, val); }
         void set_phys_addr(uintptr_t addr)          { m_raw = util::set_bits(m_raw, 12, 20, addr); }
     } __attribute__((packed));
+    
+    struct page_dir {
+    public:
+        static constexpr size_t ENTRIES = 1024;
+    
+    private:
+         page_dir_entry m_entries[ENTRIES];
+
+    public:
+         page_dir_entry &entry(size_t dir)  noexcept {
+            return m_entries[dir];
+        }
+
+         const page_dir_entry &entry(size_t dir) const  noexcept {
+            return m_entries[dir];
+        }
+    } __attribute__((packed));
 
     struct page_table {
     public:
         static constexpr size_t ENTRIES = 1024;
     
     private:
-        page_table_entry m_pages[ENTRIES];
+         page_table_entry m_entries[page_dir::ENTRIES * ENTRIES];
 
     public:
-        page_table_entry &operator[](size_t index) {
-            return m_pages[index];
+         page_table_entry &entry(size_t dir, size_t table)  noexcept {
+            return m_entries[table + dir * page_dir::ENTRIES];
         }
 
-        const page_table_entry &operator[](size_t index) const {
-            return m_pages[index];
+         const page_table_entry &entry(size_t dir, size_t table) const  noexcept {
+            return m_entries[table + dir * page_dir::ENTRIES];
         }
     } __attribute__((packed));
 

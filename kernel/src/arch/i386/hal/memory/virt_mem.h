@@ -33,22 +33,30 @@ namespace hal {
     	}
 
     private:
+        static constexpr size_t RECUR_DIR_INDEX = 1023;
+        static constexpr uintptr_t PAGE_TBL_REC = RECUR_DIR_INDEX << 22;
+        static constexpr uintptr_t PAGE_DIR_REC = PAGE_TBL_REC + (RECUR_DIR_INDEX << 12);
+        
         static constexpr size_t dir_index(uintptr_t address) noexcept {
-            return address / (PAGE_SIZE * page_table::ENTRIES);
+            return (address >> 22) & 1023;
         }
         
         static constexpr size_t table_index(uintptr_t address) noexcept {
-            return (address % (PAGE_SIZE * page_table::ENTRIES)) / PAGE_SIZE;
+            return (address >> 12) & 1023;
         }
 
-        static constexpr uintptr_t table_index(size_t dir, size_t table) noexcept {
-            return dir * PAGE_SIZE * page_table::ENTRIES + table * PAGE_SIZE;
+        static constexpr uintptr_t address(size_t dir, size_t table) noexcept {
+            return (dir * page_table::ENTRIES
+                    + table) * PAGE_SIZE;
         }
 
         static void set_page_directory(uintptr_t phys_dir_addr);
-
-        page_dir_entry *m_page_directory;
-        page_table *m_tables;
+        void map_pre_paging(uintptr_t virt, uintptr_t phys);
+        
+        const uintptr_t VIRT_OFFSET;
+        page_dir *m_page_dir_phys;
+        page_dir *m_page_dir;
+        page_table *m_page_table;
         
         uintptr_t m_vkernel_start;
         uintptr_t m_vkernel_end;

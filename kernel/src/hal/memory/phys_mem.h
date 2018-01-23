@@ -4,6 +4,12 @@
 #include <stdint.h>
 #include <stddef.h>
 #include "hal/util/bitmap.h"
+#include "main/kernel.h"
+
+extern size_t _phys_bitmap;
+extern uintptr_t KERNEL_VIRT_OFFSET;
+extern uintptr_t KERNEL_PHYS_BEGIN;
+extern uintptr_t KERNEL_PHYS_END;
 
 namespace hal {
 
@@ -38,7 +44,46 @@ namespace hal {
 
         static phys_mem_manager &instance() noexcept;
 
-        void init(uintptr_t phys, uintptr_t virt, size_t page_frames, bool clear) noexcept;
+        template < class map_type >
+        void init(map_type map) noexcept {
+        	using area_type = typename map_type::entry_type::area_type;
+
+			// Do the first (provisional) initialization of the pmm with the bitmap alloc'ed in the binary
+			uintptr_t virt = reinterpret_cast<uintptr_t>(&_phys_bitmap);
+    		uintptr_t phys = virt - reinterpret_cast<uintptr_t>(&KERNEL_VIRT_OFFSET);
+    		size_t init_page_frames = 0x20000;
+		    m_phys_bitmap = util::bitmap<size_t>(virt, init_page_frames);
+		    m_phys_bitmap.clear();
+		    // Allocate whatever space the bitmap needs
+		    this->alloc_range(phys, init_page_frames / CHAR_BIT);
+            
+            // Mark the non-accessible page frames and count the highest available page frame
+            uint64_t highest_address = 0;
+            for(auto &entry : map) {
+                // While we're here mark memory below 1MBB as unavailable because it contains BIOS stuff we don't wanna overwrite
+                if(entry.type != area_type::AVAILABLE) {
+                	hal::phys_mem_manager::instance().alloc_range(entry.addr, entry.len);
+                } else if(entry.addr + entry.len > highest_address) {
+                    highest_address = entry.addr + entry.len;
+                }
+                
+
+                kernel::m_console.print("Address: [], Length: {}, Type: {}\n",
+                    entry.addr, entry.len, static_cast<uint32_t>(entry.type));
+            }
+            size_t page_frame_count = highest_address / phys_mem_manager::PAGE_FRAME_SIZE;
+            
+			// Mark kernel frames and everything below 1MB as used
+			hal::phys_mem_manager::instance().alloc_range(0, reinterpret_cast<uintptr_t>(&KERNEL_PHYS_END));
+            
+            // Check if we need a larger bitmap
+            if(page_frame_count > hal::phys_mem_manager::instance().page_frame_count()) {
+            	kernel::m_console.print("Warning: more RAM installed than currently handleable by PMM!\n");
+            }
+
+            kernel::m_console.print("Kernel: [] - []\n", reinterpret_cast<uintptr_t>(&KERNEL_PHYS_BEGIN),
+                                reinterpret_cast<uintptr_t>(&KERNEL_PHYS_END));
+        }
         
         constexpr size_t page_frame_count() const noexcept {
         	return m_phys_bitmap.bits();

@@ -15,8 +15,14 @@ SECTIONS
 		*(.rodata)
 		*(COMMON)
 		*(.bss)
+		*(.init)
+		*(.fini)
+		*(.ctors)
+		*(.dtors)
 		. = ALIGN(512);
 	}
+	
+	. = ALIGN(512);
 	
     /DISCARD/ :
     {

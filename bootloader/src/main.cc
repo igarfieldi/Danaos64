@@ -9,7 +9,6 @@ extern void hang() __asm__("_hang") __attribute__((noreturn));
 
 extern "C" void boot_main(elf::header *elf, multiboot_tag_memmap *mmap) {
 	// TODO: try to find the multiboot magic thingy
-
 	uintptr_t entry_addr = load_elf(elf);
 	if(entry_addr == 0) {
 		print("Fatal: could not parse a proper entry address!");

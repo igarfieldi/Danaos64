@@ -1,33 +1,15 @@
 #include "phys_mem.h"
-
 #include "main/kernel.h"
-extern size_t _phys_bitmap;
-extern uintptr_t KERNEL_VIRT_OFFSET;
 
 namespace hal {
 
 
     phys_mem_manager::phys_mem_manager() noexcept : m_phys_bitmap() {
-    	// Since the bitmap is virtually addressed we need to account for that
-    	uintptr_t virt = reinterpret_cast<uintptr_t>(&_phys_bitmap);
-    	uintptr_t phys = virt - reinterpret_cast<uintptr_t>(&KERNEL_VIRT_OFFSET);
-    	kernel::m_console.print("Physical bitmap address: [] []\n", phys, virt);
-    	this->init(phys, virt, 0x20000, true);
     }
 
     phys_mem_manager &phys_mem_manager::instance() noexcept {
         static phys_mem_manager inst;
         return inst;
-    }
-    
-    void phys_mem_manager::init(uintptr_t phys, uintptr_t virt, size_t page_frames, bool clear) noexcept {
-        // Set the bitmap at the given address and clear it if so desired
-        m_phys_bitmap = util::bitmap<size_t>(virt, page_frames);
-        if(clear) {
-        	m_phys_bitmap.clear();
-        }
-        // Allocate whatever space the bitmap needs
-        this->alloc_range(phys, page_frames / CHAR_BIT);
     }
 
     bool phys_mem_manager::is_available_frame(size_t page_frame) const noexcept {

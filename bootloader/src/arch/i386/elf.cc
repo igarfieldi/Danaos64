@@ -77,9 +77,13 @@ extern "C" uintptr_t load_elf(elf::header *header) {
 			highest_address = (upper > highest_address) ? upper : highest_address;
 		}
 	}
-
+	
 	// Load the sections into memory which are not part of the program headers
 	auto section_headers = reinterpret_cast<elf::section_header *>(header_addr + header->e_shoff);
+	if(highest_address > base_vaddr) {
+		// Keep loading in the physical realm please
+		highest_address -= base_vaddr - base_paddr;
+	}
 	char *buffer = reinterpret_cast<char *>(highest_address);
 	for(unsigned int i = 0; i < header->e_shnum; ++i) {
 		if(section_headers[i].sh_addr == 0) {

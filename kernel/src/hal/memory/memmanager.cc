@@ -10,6 +10,11 @@ namespace hal {
         return inst;
     }
     
+    void memory_manager::init() noexcept {
+        m_vkernel_curr = virt_mem_manager::instance().vkernel_start();
+        m_vkernel_alloced = virt_mem_manager::instance().vkernel_start();
+    }
+    
     uintptr_t memory_manager::kernel_alloc_pages(uintptr_t phys, size_t size) noexcept {
 		// This fragments the kernel vm on the level of pages!
 		

@@ -63,6 +63,7 @@ TARGETCCFLAGS	:= $(CCFLAGS) $($(ISA)-CCFLAGS)
 TARGETCPPFLAGS	:= $(CPPFLAGS) $($(ISA)-CPPFLAGS)
 TARGETASMFLAGS	:= $(ASMFLAGS) $($(ISA)-ASMFLAGS)
 TARGETLDFLAGS	:= $(LDFLAGS) $($(ISA)-LDFLAGS)
+TARGETLIBGCC	:= $(shell $(CC) $(TARGETCPPFLAGS) -print-libgcc-file-name)
 QEMUFLAGS		+= -no-kvm -net none -vga std -m 64 -serial file:serial.log
 
 DEBUGSCRIPT		:= $(CFGDIR)/debug/gdb-$(ISA).script

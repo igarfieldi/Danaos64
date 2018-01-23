@@ -5,8 +5,8 @@
 
 .set			BOOTLOADER_START,		0x7C00
 .set			BOOTLOADER_STACK,		0x7C00
-.set			KERNEL_TEMP_ADDR,		0x9000
-.set			KERNEL_TEMP_SEGMENT,	0x0900
+.set			KERNEL_TEMP_ADDR,		0xE000
+.set			KERNEL_TEMP_SEGMENT,	0x0E00
 .set			KERNEL_COPY_ADDR,		0x1000000
 .set			SEGMENT_SIZE,			16
 .set			CODE_SEGMENT,			0x8
@@ -212,7 +212,6 @@ before_kernel_load:
 	movl		$KERNEL_COPY_ADDR, %edi
 	
 	// Load at most as many sectors at a time as there are per track
-
 loop_kernel_load:
 	movw		(kernel_sectors), %ax
 	cmp			(drive_sector_count), %ax

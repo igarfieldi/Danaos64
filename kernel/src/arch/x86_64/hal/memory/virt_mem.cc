@@ -1,6 +1,7 @@
 #include "virt_mem.h"
 #include "hal/memory/phys_mem.h"
 #include "main/kernel.h"
+#include "libk/string.h"
 
 // Comes from the linker
 extern uintptr_t KERNEL_VIRT_OFFSET;
@@ -33,6 +34,8 @@ namespace hal {
         // Add the mappings to the (physical) structures: pml4, pdp, pd, and pt
         if(!m_page_map_phys->entry(pme).is_present()) {
             uintptr_t addr = phys_mem_manager::instance().alloc_any();
+		    // Zero out the page
+		    std::memset(reinterpret_cast<void*>(addr), 0, phys_mem_manager::PAGE_FRAME_SIZE);
             m_page_map_phys->entry(pme) = page_map_entry(addr, true, true, true, false, false, false);
         }
 
@@ -40,6 +43,8 @@ namespace hal {
         page_dir_ptr_entry *pdp = reinterpret_cast< page_dir_ptr_entry *>(m_page_map_phys->entry(pme).get_dir_ptr_addr());
         if(!pdp[pdpe].is_present()) {
             uintptr_t addr = phys_mem_manager::instance().alloc_any();
+		    // Zero out the page
+		    std::memset(reinterpret_cast<void*>(addr), 0, phys_mem_manager::PAGE_FRAME_SIZE);
             pdp[pdpe] = page_dir_ptr_entry(addr, true, true, true, false, false, false);
         }
 
@@ -47,6 +52,8 @@ namespace hal {
         page_dir_entry *pd = reinterpret_cast< page_dir_entry *>(pdp[pdpe].get_dir_addr());
         if(!pd[pde].is_present()) {
             uintptr_t addr = phys_mem_manager::instance().alloc_any();
+		    // Zero out the page
+		    std::memset(reinterpret_cast<void*>(addr), 0, phys_mem_manager::PAGE_FRAME_SIZE);
             pd[pde] = page_dir_entry(addr, true, true, true, false, false, false);
         }
 
@@ -74,6 +81,10 @@ namespace hal {
         // Allocate a new page frame for the page directory
         uintptr_t page_map_phys = phys_mem_manager::instance().alloc_any();
         m_page_map_phys = reinterpret_cast<page_map *>(page_map_phys);
+        // Identity map to allow access
+        this->map_pre_paging(page_map_phys, page_map_phys);
+        // Zero out the page
+        std::memset(reinterpret_cast<void*>(page_map_phys), 0, phys_mem_manager::PAGE_FRAME_SIZE);
 
         // Map page map recursively
         m_page_map_phys->entry(RECUR_MAP_INDEX) = page_map_entry(page_map_phys, true, true, false, false, false, false);
@@ -116,8 +127,10 @@ namespace hal {
         if(!m_page_map->entry(map).is_present()) {
             // Reserve RAM for the page directory pointer and create the mapping
             uintptr_t addr = phys_mem_manager::instance().alloc_any();
+		    // Zero out the page
+		    std::memset(reinterpret_cast<void*>(addr), 0, phys_mem_manager::PAGE_FRAME_SIZE);
             m_page_map->entry(map) = page_map_entry(addr, true, true, !kernel, false, false, false);
-        } else if(!m_page_map->entry(map).is_user()) {
+        } else if(!m_page_map->entry(map).is_user() && !kernel) {
             // Do something about this... users shouldn't map into kernel space
         }
 
@@ -125,6 +138,8 @@ namespace hal {
         if(!m_page_dir_ptr->entry(map, dir_ptr).is_present()) {
             // Reserve RAM for the page directory and create the mapping
             uintptr_t addr = phys_mem_manager::instance().alloc_any();
+		    // Zero out the page
+		    std::memset(reinterpret_cast<void*>(addr), 0, phys_mem_manager::PAGE_FRAME_SIZE);
             m_page_dir_ptr->entry(map, dir_ptr) = page_dir_ptr_entry(addr, true, true, !kernel, false, false, false);
         }
 
@@ -132,6 +147,8 @@ namespace hal {
         if(!m_page_dir->entry(map, dir_ptr, dir).is_present()) {
             // Reserve RAM for the page table and create the mapping
             uintptr_t addr = phys_mem_manager::instance().alloc_any();
+		    // Zero out the page
+		    std::memset(reinterpret_cast<void*>(addr), 0, phys_mem_manager::PAGE_FRAME_SIZE);
             m_page_dir->entry(map, dir_ptr, dir) = page_dir_entry(addr, true, true, !kernel, false, false, false);
         }
 
@@ -154,8 +171,10 @@ namespace hal {
             if(!m_page_map->entry(map).is_present()) {
                 // Reserve RAM for the page directory pointer and create the mapping
                 uintptr_t addr = phys_mem_manager::instance().alloc_any();
+				// Zero out the page
+				std::memset(reinterpret_cast<void*>(addr), 0, phys_mem_manager::PAGE_FRAME_SIZE);
                 m_page_map->entry(map) = page_map_entry(addr, true, true, !kernel, false, false, false);
-            } else if(!m_page_map->entry(map).is_user()) {
+            } else if(!m_page_map->entry(map).is_user() && !kernel) {
                 // Do something about this... users shouldn't map into kernel space
             }
 
@@ -163,6 +182,8 @@ namespace hal {
             if(!m_page_dir_ptr->entry(map, dir_ptr).is_present()) {
                 // Reserve RAM for the page directory and create the mapping
                 uintptr_t addr = phys_mem_manager::instance().alloc_any();
+				// Zero out the page
+				std::memset(reinterpret_cast<void*>(addr), 0, phys_mem_manager::PAGE_FRAME_SIZE);
                 m_page_dir_ptr->entry(map, dir_ptr) = page_dir_ptr_entry(addr, true, true, !kernel, false, false, false);
             }
 
@@ -170,6 +191,8 @@ namespace hal {
             if(!m_page_dir->entry(map, dir_ptr, dir).is_present()) {
                 // Reserve RAM for the page table and create the mapping
                 uintptr_t addr = phys_mem_manager::instance().alloc_any();
+				// Zero out the page
+				std::memset(reinterpret_cast<void*>(addr), 0, phys_mem_manager::PAGE_FRAME_SIZE);
                 m_page_dir->entry(map, dir_ptr, dir) = page_dir_entry(addr, true, true, !kernel, false, false, false);
             }
 
@@ -193,8 +216,10 @@ namespace hal {
             if(!m_page_map->entry(map).is_present()) {
                 // Reserve RAM for the page directory pointer and create the mapping
                 uintptr_t addr = phys_mem_manager::instance().alloc_any();
+				// Zero out the page
+				std::memset(reinterpret_cast<void*>(addr), 0, phys_mem_manager::PAGE_FRAME_SIZE);
                 m_page_map->entry(map) = page_map_entry(addr, true, true, !kernel, false, false, false);
-            } else if(!m_page_map->entry(map).is_user()) {
+            } else if(!m_page_map->entry(map).is_user() && !kernel) {
                 // Do something about this... users shouldn't map into kernel space
             }
 
@@ -202,6 +227,8 @@ namespace hal {
             if(!m_page_dir_ptr->entry(map, dir_ptr).is_present()) {
                 // Reserve RAM for the page directory and create the mapping
                 uintptr_t addr = phys_mem_manager::instance().alloc_any();
+				// Zero out the page
+				std::memset(reinterpret_cast<void*>(addr), 0, phys_mem_manager::PAGE_FRAME_SIZE);
                 m_page_dir_ptr->entry(map, dir_ptr) = page_dir_ptr_entry(addr, true, true, !kernel, false, false, false);
             }
 
@@ -209,6 +236,8 @@ namespace hal {
             if(!m_page_dir->entry(map, dir_ptr, dir).is_present()) {
                 // Reserve RAM for the page table and create the mapping
                 uintptr_t addr = phys_mem_manager::instance().alloc_any();
+				// Zero out the page
+				std::memset(reinterpret_cast<void*>(addr), 0, phys_mem_manager::PAGE_FRAME_SIZE);
                 m_page_dir->entry(map, dir_ptr, dir) = page_dir_entry(addr, true, true, !kernel, false, false, false);
             }
 

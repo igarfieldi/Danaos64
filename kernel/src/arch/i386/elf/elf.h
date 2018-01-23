@@ -173,6 +173,9 @@ namespace elf {
 		} __attribute__((packed)) p_flags;
 		Elf32_Word p_align;
     } __attribute__((packed));
+    
+    const section_header *find_string_table(const char *strHeaderTbl, const section_header *headers, size_t count);
+    const section_header *find_symbol_table(const char *strHeaderTbl, const section_header *headers, size_t count);
 
     class symbol_lookup {
     private:
@@ -184,7 +187,7 @@ namespace elf {
     public:
         symbol_lookup();
         
-        void init(const multiboot_tag_elf_sections *headers, size_t size);
+        void init(const char *stringTable, size_t strings, const symbol *symbolHeader, size_t symbols);
     
     	template < class R, class... Args >
     	const char *lookup(R (*func)(Args...)) {

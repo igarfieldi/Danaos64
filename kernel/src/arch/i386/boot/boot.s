@@ -144,7 +144,16 @@ higher_half:
 
 .align			4096
 _page_directory:
-	.skip		PAGING_PD_ENTRY_SIZE * PAGING_PD_ENTRIES, 0
+	// Identity mapping
+	.long		0*0x00400000 + PAGING_PRESENT_4MB_RW								// Maps 0x00000000 - 0x003FFFFFF
+	.long		1*0x00400000 + PAGING_PRESENT_4MB_RW								// Maps 0x00400000 - 0x007FFFFFF
+	.long		2*0x00400000 + PAGING_PRESENT_4MB_RW								// Maps 0x00800000 - 0x00BFFFFFF
+	.skip		PAGING_PD_ENTRY_SIZE * (KERNEL_PD_INDEX-3), 0						// Doesn't map 0x01000000 - 0xBFFFFFFF
+	// Re-map to the beginning
+	.long		0*0x00400000 + PAGING_PRESENT_4MB_RW								// Maps 0xC0000000 - 0xC03FFFFFF
+	.long		1*0x00400000 + PAGING_PRESENT_4MB_RW								// Maps 0xC0400000 - 0xC07FFFFFF
+	.long		2*0x00400000 + PAGING_PRESENT_4MB_RW								// Maps 0xC0800000 - 0xC0BFFFFFF
+	.skip		PAGING_PD_ENTRY_SIZE * (PAGING_PD_ENTRIES-KERNEL_PD_INDEX-3), 0		// Doesn't map 0xC0C00000 - 0xFFFFFFFF
 	
 // The initial bitmap for physical memory. We need this to solve the hen-egg-problem of finding
 // memory for the bitmap but also needing to know where we can put it.

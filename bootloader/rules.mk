@@ -47,7 +47,7 @@ $(BOOTELF): $(BOOTOBJ)
 ifdef VERBOSE
 	@echo "    (LD)      Linking..."
 endif
-	@i386-elf-g++ -T $(BOOTLDSCRIPT) -o $(BOOTELF) $(LDFLAGS) $(i386-LDFLAGS) $^
+	@i386-elf-g++ -T $(BOOTLDSCRIPT) -o $(BOOTELF) $(LDFLAGS) $(i386-LDFLAGS) $^ $(TARGETLIBGCC)
 
 # Include the dependency rules (if present; if not, we have to build the obj file anyway)
 -include $(BOOTDEP)

@@ -51,8 +51,18 @@ extern "C" uintptr_t load_elf(elf::header *header) {
 	uintptr_t highest_address = 0;
 	
 	// Load all loadable segments
+	// Load all loadable segments
+	uint64_t base_vaddr = 0xFFFFFFFFFFFFFFFF;
+	uint64_t base_paddr = 0xFFFFFFFFFFFFFFFF;
 	for(unsigned int i = 0; i < header->e_phnum; ++i) {
 		if(program_headers[i].p_type == elf::program_header::type::LOAD) {
+			if(program_headers[i].p_vaddr < base_vaddr) {
+				base_vaddr = program_headers[i].p_vaddr;
+			}
+			if(program_headers[i].p_paddr < base_paddr) {
+				base_paddr = program_headers[i].p_paddr;
+			}
+			
 			char *target_mem = reinterpret_cast<char *>(program_headers[i].p_paddr);
 			// What's actually in file (and thus copyable)
 			for(unsigned int j = 0; j < program_headers[i].p_filesz; ++j) {
@@ -70,6 +80,10 @@ extern "C" uintptr_t load_elf(elf::header *header) {
 
 	// Load the sections into memory which are not part of the program headers
 	auto section_headers = reinterpret_cast<elf::section_header *>(header_addr + header->e_shoff);
+	if(highest_address > base_vaddr) {
+		// Keep loading in the physical realm please
+		highest_address -= base_vaddr - base_paddr;
+	}
 	char *buffer = reinterpret_cast<char *>(highest_address);
 	for(unsigned int i = 0; i < header->e_shnum; ++i) {
 		if(section_headers[i].sh_addr == 0) {

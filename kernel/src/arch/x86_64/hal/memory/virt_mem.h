@@ -13,22 +13,31 @@ namespace hal {
         static constexpr size_t PAGE_SIZE = 4096;
 
     private:
+        static constexpr size_t map_index(uintptr_t address) noexcept {
+            return address / (PAGE_SIZE * page_table::ENTRIES * page_dir::ENTRIES * page_dir_ptr::ENTRIES);
+        }
+
+        static constexpr size_t dir_ptr_index(uintptr_t address) noexcept {
+            return address / (PAGE_SIZE * page_table::ENTRIES * page_dir::ENTRIES);
+        }
         static constexpr size_t dir_index(uintptr_t address) noexcept {
             return address / (PAGE_SIZE * page_table::ENTRIES);
         }
         
         static constexpr size_t table_index(uintptr_t address) noexcept {
-            return (address % (PAGE_SIZE * page_table::ENTRIES)) / PAGE_SIZE;
+            return address / PAGE_SIZE;
         }
 
-        static constexpr uintptr_t table_index(size_t dir, size_t table) noexcept {
-            return dir * PAGE_SIZE * page_table::ENTRIES + table * PAGE_SIZE;
+        static constexpr uintptr_t table_index(size_t map, size_t dir_ptr, size_t dir, size_t table) noexcept {
+            return (((map * page_dir_ptr::ENTRIES
+                    + dir_ptr) * page_dir::ENTRIES
+                    + dir) * page_table::ENTRIES
+                    + table) * PAGE_SIZE;
         }
 
         static void set_page_directory(uintptr_t phys_dir_addr);
 
-        page_dir_entry *m_page_directory;
-        page_table *m_tables;
+        volatile page_map *m_page_map;
         
         virt_mem_manager() noexcept;
     

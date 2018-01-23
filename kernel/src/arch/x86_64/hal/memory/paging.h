@@ -7,6 +7,42 @@
 
 namespace hal {
 
+    class page_map_entry {
+    private:
+        uint64_t m_raw;
+
+    public:
+        page_map_entry() = default;
+        page_map_entry(const page_map_entry &) = default;
+        page_map_entry(page_map_entry &&) = default;
+        page_map_entry &operator=(const page_map_entry &) = default;
+        page_map_entry &operator=(page_map_entry &&) = default;
+
+        page_map_entry(uint64_t raw) : m_raw(raw) {}
+        page_map_entry(uintptr_t dir_ptr_addr, bool present, bool rw, bool user, bool wt, bool cd, bool no_exec) :
+                m_raw(present | (rw << 1) | (user << 2) | (wt << 3) | (cd << 4)
+                        | (dir_ptr_addr & 0xFFFFFFFFFF000) | (static_cast<uint64_t>(no_exec) << 63)) {}
+
+        constexpr bool is_present() const               { return util::get_bit(m_raw, 0); }
+        constexpr bool is_read_write() const            { return util::get_bit(m_raw, 1); }
+        constexpr bool is_user() const                  { return util::get_bit(m_raw, 2); }
+        constexpr bool is_write_through() const         { return util::get_bit(m_raw, 3); }
+        constexpr bool is_cache_disabled() const        { return util::get_bit(m_raw, 4); }
+        constexpr bool is_accessed() const              { return util::get_bit(m_raw, 5); }
+        constexpr uintptr_t get_dir_ptr_addr() const    { return util::get_bits(m_raw, 12, 40); }
+        constexpr bool is_no_exec() const               { return util::get_bit(m_raw, 63); }
+        
+        void set_present(bool val)                      { m_raw = util::set_bit(m_raw, 0, val); }
+        void set_read_write(bool val)                   { m_raw = util::set_bit(m_raw, 1, val); }
+        void set_user(bool val)                         { m_raw = util::set_bit(m_raw, 2, val); }
+        void set_write_through(bool val)                { m_raw = util::set_bit(m_raw, 3, val); }
+        void set_cache_disabled(bool val)               { m_raw = util::set_bit(m_raw, 4, val); }
+        void set_accessed(bool val)                     { m_raw = util::set_bit(m_raw, 5, val); }
+        void set_dir_ptr_addr(uintptr_t addr)           { m_raw = util::set_bits(m_raw, 12, 40, addr); }
+        void set_no_exec(bool val)                      { m_raw = util::set_bit(m_raw, 63, val); }
+        
+    } __attribute__((packed));
+
     class page_dir_ptr_entry {
     private:
         uint64_t m_raw;
@@ -194,6 +230,12 @@ namespace hal {
             return m_entries[index];
         }
     } __attribute__((packed));
+
+
+    using page_table = table<page_table_entry, 512>;
+    using page_dir = table<page_dir_entry, 512>;
+    using page_dir_ptr = table<page_dir_ptr_entry, 512>;
+    using page_map = table<page_map_entry, 512>;
 
 } // namespace hal
 

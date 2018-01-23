@@ -10,26 +10,24 @@ namespace task {
 
 namespace hal {
 
-
     struct thread_context {
-        uint32_t ss;
+        uint32_t ebx;
+        uint32_t ebp;
+        uint32_t edi;
+        uint32_t esi;
         uint32_t esp;
-
-        thread_context(uint32_t ss, uint32_t esp) : ss(ss), esp(esp) {}
-        thread_context(const isr_frame_equal_priv &isr_frame) : ss(0), esp(isr_frame.registers.esp) {}
-        void change_frame(isr_frame_equal_priv &isr_frame) const {
-            isr_frame.registers.esp = esp;
-        }
     };
 
     thread_context create_context(uint32_t *stack, task::task &task);
 
 } // namespace hal
 
+extern "C" void switch_context(hal::thread_context *curr, hal::thread_context *next);
+
 namespace task {
 
     struct task_state_segment {
-        class segment {
+        struct segment {
         private:
             uint16_t seg;
             uint16_t reserved;
@@ -37,9 +35,9 @@ namespace task {
         public:
             segment() = default;
             segment(uint16_t seg) : seg(seg), reserved(0) {}
-            segment &operator=(uint16_t seg)    { this->seg = seg; }
+            segment &operator=(uint16_t seg)    { this->seg = seg; return *this; }
             operator uint16_t() const           { return seg; }
-        }
+        } __attribute__((packed));
 
         segment link;
         uint32_t esp0;

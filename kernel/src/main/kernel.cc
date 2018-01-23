@@ -44,6 +44,7 @@ static void test2() {
             j += math::logull(10, v);
         }
         //task::scheduler::instance().yield();
+        task::scheduler::instance().schedule();
     }
 }
 
@@ -55,6 +56,7 @@ static void test3() {
             j += math::logull(10, v);
         }
         //task::scheduler::instance().yield();
+        task::scheduler::instance().schedule();
     }
     debug::backtrace();
 }

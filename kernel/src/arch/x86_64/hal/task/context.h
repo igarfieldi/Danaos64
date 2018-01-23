@@ -18,7 +18,6 @@ namespace hal {
         uint64_t r14;
         uint64_t r15;
         uint64_t rsp;
-        uint64_t rip;
     };
 
     thread_context create_context(uint64_t *stack, task::task &task);
@@ -26,6 +25,7 @@ namespace hal {
 } // namespace hal
 
 extern "C" void switch_context(hal::thread_context *curr, hal::thread_context *next);
+extern "C" void start_context();
 
 namespace task {
 

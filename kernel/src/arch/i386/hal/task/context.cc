@@ -5,30 +5,17 @@
 namespace hal {
 
     thread_context create_context(uint32_t *stack, task::task &task) {
-        thread_context context(0, reinterpret_cast<uint32_t>(&stack[-9]));
-        // TODO: proper SS
+        thread_context context;
+        context.ebx = 0;
+        context.edi = 0;
+        context.esi = 0;
+        context.ebp = reinterpret_cast<uint64_t>(&stack[0]);
+        context.esp = reinterpret_cast<uint64_t>(&stack[-2]);
 
         // New state
-        stack[-9] = 0xCAFEBABE;									// EAX
-        stack[-8] = 0xFAFAFAFA;									// ECX
-        stack[-7] = 0xDEADBEEF;									// EDX
-        stack[-6] = 0;											// Interrupt number
-        stack[-5] = 0;											// Error code
-        stack[-4] = reinterpret_cast<uint32_t>(&task::task::start);	// Return EIP
-        stack[-3] = hal::glob_desc_table::instance()
-                            .get_kernel_selector()
-                            .get_segment_selector();			// CS
-        stack[-2] = 0;							                // EFLAGS
-        stack[-1] = 0xCAAAFEEE;			                        // Start_task return EIP (must not return!)
-        stack[0] = reinterpret_cast<uint32_t>(&task);			// Start_task function parameter
-
-        __asm__ volatile("pushfl \n\t"
-                "popl %%eax\n\t"
-                "movl %%eax, %0 \n\t"
-                : "=m"(stack[-2])
-                :
-                : "%eax"
-        );
+        stack[-2] = reinterpret_cast<uint64_t>(&task::task::start);		// Start function
+        stack[-1] = 0xCAFEBABE;											// Return address of start function (musn't be called!)
+        stack[0] = reinterpret_cast<uint64_t>(&task);			    	// Start function parameter
         
         return context;
     }

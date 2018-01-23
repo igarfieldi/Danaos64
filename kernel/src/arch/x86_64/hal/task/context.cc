@@ -13,12 +13,11 @@ namespace hal {
         context.r15 = 0;
         context.rbp = reinterpret_cast<uint64_t>(&stack[0]);
         context.rsp = reinterpret_cast<uint64_t>(&stack[-2]);
-        context.rip = reinterpret_cast<uint64_t>(&task::task::start);
 
         // New state
-        stack[-2] = reinterpret_cast<uint64_t>(&task::task::start);	// Return EIP
-        stack[-1] = 0xDEADCAFECAAAFEEE;			                    // Start_task return EIP (must not return!)
-        stack[0] = reinterpret_cast<uint64_t>(&task);			    // Start_task function parameter
+        stack[-2] = reinterpret_cast<uint64_t>(start_context);		// Start function
+        stack[-1] = reinterpret_cast<uint64_t>(&task);			    // Start function parameter
+        stack[0] = reinterpret_cast<uint64_t>(&task::task::start);	// Start function
         
         return context;
     }

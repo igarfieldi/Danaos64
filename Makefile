@@ -104,7 +104,7 @@ $(IMGGRUB): $(KERNELIMG)
 
 debug: img
 	# WIP... needs its own script I fear (if that is even enough)
-	@$(QEMU) $(QEMUFLAGS) -drive format=raw,file=$(TARGETIMG) -S -s -daemonize && $(GDB) $(MBRSYMBOLS) -x $(DEBUGSCRIPT)
+	@$(QEMU) $(QEMUFLAGS) -drive format=raw,file=$(TARGETIMG) -S -s -daemonize && $(GDB) $(KERNELSYMBOLS) -x $(DEBUGSCRIPT)
 	
 run: img
 	@$(QEMU) $(QEMUFLAGS) -drive format=raw,file=$(TARGETIMG)

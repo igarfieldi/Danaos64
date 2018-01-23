@@ -1,4 +1,5 @@
 .global		switch_context
+.global		start_context
 
 
 /**
@@ -13,8 +14,6 @@ switch_context:
 	movq		%r14, 32(%rdi)
 	movq		%r15, 40(%rdi)
 	movq		%rsp, 48(%rdi)
-	movq		(%rsp), %rax		// Return address (RIP)
-	movq		%rax, 56(%rdi)
 
 	// Load the state from the new context
 	movq		(%rsi), %rbx
@@ -24,7 +23,13 @@ switch_context:
 	movq		32(%rsi), %r14
 	movq		40(%rsi), %r15
 	movq		48(%rsi), %rsp
-	movq		56(%rsi), %rax		// Return address (RIP)
-	movq		%rax, (%rsp)
 
 	ret
+	
+/**
+ * void start_context()
+ */
+start_context:
+	popq		%rdi				// First on stack: task object => needs to go into RDI
+	ret								// Second on stack: return address == start function
+	

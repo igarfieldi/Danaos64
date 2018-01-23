@@ -2,6 +2,7 @@
 #define DANAOS_ELF_ELF_H_
 
 #include <stdint.h>
+#include <stddef.h>
 #include "boot/multiboot2.h"
 
 namespace elf {
@@ -183,7 +184,7 @@ namespace elf {
     public:
         symbol_lookup();
         
-        void init(const multiboot_tag_elf_sections *headers);
+        void init(const multiboot_tag_elf_sections *headers, size_t size);
     
     	template < class R, class... Args >
     	const char *lookup(R (*func)(Args...)) {

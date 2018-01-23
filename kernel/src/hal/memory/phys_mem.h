@@ -38,9 +38,7 @@ namespace hal {
 
         static phys_mem_manager &instance() noexcept;
 
-        void init(uintptr_t bitmap_address, size_t page_frames, bool clear) noexcept;
-        void change_bitmap_addr(uintptr_t addr) noexcept;
-        uintptr_t get_bitmap_addr() const noexcept;
+        void init(uintptr_t phys, uintptr_t virt, size_t page_frames, bool clear) noexcept;
         
         constexpr size_t page_frame_count() const noexcept {
         	return m_phys_bitmap.bits();

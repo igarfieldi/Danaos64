@@ -29,7 +29,7 @@ namespace hal {
     	}
     	
     	constexpr uintptr_t vkernel_end() noexcept {
-    		return m_vkernel_start;
+    		return m_vkernel_end;
     	}
 
     private:

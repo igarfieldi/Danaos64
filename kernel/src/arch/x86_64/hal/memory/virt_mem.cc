@@ -91,13 +91,7 @@ namespace hal {
             this->map_pre_paging(addr, curr_phys);
         }
 
-        uintptr_t phys_bitmap = phys_mem_manager::instance().get_bitmap_addr();
-        uintptr_t virt_bitmap = phys_bitmap + VIRT_OFFSET;
-        // Map the new bitmap address
-        this->map_pre_paging(virt_bitmap, phys_bitmap);
-
         // Re-initialize the physical memory manager to use virtual addressing
-        phys_mem_manager::instance().change_bitmap_addr(virt_bitmap);
         // Set the new page directory
         set_page_directory(page_map_phys);
 

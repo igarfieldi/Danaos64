@@ -19,7 +19,7 @@ namespace elf {
     
         const char *symbolHeaderStringTable =
             reinterpret_cast<const char *>(sectionHeader[header->shndx].sh_addr);
-        // Alloc page framaes and map the symbol-string table into virtual memory
+        // Alloc page fraaes and map the symbol-string table into virtual memory
     	hal::phys_mem_manager::instance().alloc_range(reinterpret_cast<uintptr_t>(symbolHeaderStringTable),
     		sectionHeader[header->shndx].sh_size);
         symbolHeaderStringTable = reinterpret_cast<const char *>(

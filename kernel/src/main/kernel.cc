@@ -114,8 +114,8 @@ extern "C" void kernelMain(uint32_t magic, uintptr_t info) {
     devices::cga::instance().init(fb_addr, fb_width, fb_height);
 
     if(elf_sections != nullptr) {
-		//kernel::m_elf_lookup.init(elf_sections, elf_section_size);
-		//debug::backtrace(2);
+		kernel::m_elf_lookup.init(elf_sections, elf_section_size);
+		debug::backtrace(2);
     }
 
     kernel::m_console.print("Kernel loaded!\n");

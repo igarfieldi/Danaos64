@@ -9,9 +9,10 @@ namespace hal {
 
     phys_mem_manager::phys_mem_manager() noexcept : m_phys_bitmap() {
     	// Since the bitmap is virtually addressed we need to account for that
-    	uintptr_t bitmap_addr = reinterpret_cast<uintptr_t>(&_phys_bitmap) - reinterpret_cast<uintptr_t>(&KERNEL_VIRT_OFFSET);
-    	kernel::m_console.print("Physical bitmap address: []\n", bitmap_addr);
-    	this->init(bitmap_addr, 0x20000, true);
+    	uintptr_t virt = reinterpret_cast<uintptr_t>(&_phys_bitmap);
+    	uintptr_t phys = virt - reinterpret_cast<uintptr_t>(&KERNEL_VIRT_OFFSET);
+    	kernel::m_console.print("Physical bitmap address: [] []\n", phys, virt);
+    	this->init(phys, virt, 0x20000, true);
     }
 
     phys_mem_manager &phys_mem_manager::instance() noexcept {
@@ -19,22 +20,14 @@ namespace hal {
         return inst;
     }
     
-    void phys_mem_manager::init(uintptr_t bitmap_address, size_t page_frames, bool clear) noexcept {
+    void phys_mem_manager::init(uintptr_t phys, uintptr_t virt, size_t page_frames, bool clear) noexcept {
         // Set the bitmap at the given address and clear it if so desired
-        m_phys_bitmap = util::bitmap<size_t>(bitmap_address, page_frames);
+        m_phys_bitmap = util::bitmap<size_t>(virt, page_frames);
         if(clear) {
         	m_phys_bitmap.clear();
         }
         // Allocate whatever space the bitmap needs
-        this->alloc_range(bitmap_address, page_frames / CHAR_BIT);
-    }
-
-    void phys_mem_manager::change_bitmap_addr(uintptr_t addr) noexcept {
-        m_phys_bitmap = util::bitmap<size_t>(addr, m_phys_bitmap.bits());
-    }
-
-    uintptr_t phys_mem_manager::get_bitmap_addr() const noexcept {
-        return reinterpret_cast<uintptr_t>(m_phys_bitmap.data());
+        this->alloc_range(phys, page_frames / CHAR_BIT);
     }
 
     bool phys_mem_manager::is_available_frame(size_t page_frame) const noexcept {

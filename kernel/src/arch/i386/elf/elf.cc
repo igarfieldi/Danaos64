@@ -1,6 +1,7 @@
 #include "elf.h"
 #include "libk/string.h"
 #include "main/kernel.h"
+#include "hal/memory/memmanager.h"
 
 namespace elf {
 
@@ -8,11 +9,22 @@ namespace elf {
 									symbols(0), strings(0) {
 	}
 
-    void symbol_lookup::init(const multiboot_tag_elf_sections *header) {
+    void symbol_lookup::init(const multiboot_tag_elf_sections *header, size_t size) {
+        // Alloc the page frames and map the header into virtual memory
+    	hal::phys_mem_manager::instance().alloc_range(reinterpret_cast<uintptr_t>(header), size);
+        header = reinterpret_cast<multiboot_tag_elf_sections *>(
+        	hal::memory_manager::instance().kernel_alloc_pages(reinterpret_cast<uintptr_t>(header),
+        	size));
         auto sectionHeader = reinterpret_cast<const section_header *>(header->sections);
     
         const char *symbolHeaderStringTable =
             reinterpret_cast<const char *>(sectionHeader[header->shndx].sh_addr);
+        // Alloc page frames and map the symbol-string table into virtual memory
+    	hal::phys_mem_manager::instance().alloc_range(reinterpret_cast<uintptr_t>(symbolHeaderStringTable),
+    		sectionHeader[header->shndx].sh_size);
+        symbolHeaderStringTable = reinterpret_cast<const char *>(
+        	hal::memory_manager::instance().kernel_alloc_pages(reinterpret_cast<uintptr_t>(symbolHeaderStringTable),
+        	sectionHeader[header->shndx].sh_size));
     
         for (unsigned int i = 0; i < header->num; i++) {
             const char *name = &symbolHeaderStringTable[sectionHeader[i].sh_name];
@@ -24,6 +36,20 @@ namespace elf {
                 symbols     = sectionHeader[i].sh_size / sizeof(symbol);
             }
         }
+        
+        // Alloc page frames and map the string and the symbol table into virtual memory
+        if(stringTable != nullptr) {
+			hal::phys_mem_manager::instance().alloc_range(reinterpret_cast<uintptr_t>(stringTable), sizeof(char) * strings);
+		    stringTable = reinterpret_cast<const char *>(
+		    	hal::memory_manager::instance().kernel_alloc_pages(reinterpret_cast<uintptr_t>(stringTable),
+		    	sizeof(char) * strings));
+		}
+        if(symbolTable != nullptr) {
+			hal::phys_mem_manager::instance().alloc_range(reinterpret_cast<uintptr_t>(symbolTable), sizeof(symbol) * symbols);
+		    symbolTable = reinterpret_cast<symbol *>(
+		    	hal::memory_manager::instance().kernel_alloc_pages(reinterpret_cast<uintptr_t>(symbolTable),
+		    	sizeof(symbol) * symbols));
+		}
     }
 
     const char *symbol_lookup::lookup(uintptr_t address) {

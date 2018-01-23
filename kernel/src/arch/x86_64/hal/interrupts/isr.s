@@ -83,6 +83,7 @@ isr_caller:
 	pushq		%rdx
 	pushq		%rcx
 	pushq		%rax
+	pushq		%rbp
 	pushq		%rsp
 
 	// Argument will be interrupt state
@@ -93,6 +94,7 @@ _endIsr:
 
 	// Restore the registers
 	popq		%rsp
+	popq		%rbp
 	popq		%rax
 	popq		%rcx
 	popq		%rdx
@@ -103,7 +105,7 @@ _endIsr:
 	popq		%rsi
 	popq		%rdi
 	
-	addq		$16, %rsp					// Remove error code and interrupt number from stack
+	addq		$0x10, %rsp					// Remove error code and interrupt number from stack
 	
 	iretq
 

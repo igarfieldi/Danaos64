@@ -5,14 +5,13 @@
 
 
 
-extern "C" void isr_handler(hal::isr_frame_equal_priv *isr_state) {
-	kernel::m_console.print("Interrupt no.: [] - Error: []\n", isr_state->int_num, isr_state->error_code);
+extern "C" void isr_handler(hal::isr_frame *frame) {
+	kernel::m_console.print("Interrupt no.: [] - Error: []\n", frame->int_num, frame->error_code);
 	
-	const hal::thread_context &next_context = task::scheduler::instance().schedule(hal::thread_context{isr_state->registers.rsp});
-	//next_context.change_frame(*isr_state);
-	isr_state->registers.rsp = next_context.rsp;
+	const hal::task_context &next_context = task::scheduler::instance().schedule(hal::task_context(*frame));
+	next_context.switch_frame(*frame);
 
-	//hal::isr_dispatcher::instance().trigger(isr_state->int_num);
+	//hal::isr_dispatcher::instance().trigger(frame->int_num);
 }
 
 namespace hal {

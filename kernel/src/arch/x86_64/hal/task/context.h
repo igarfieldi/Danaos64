@@ -10,26 +10,23 @@ namespace task {
 
 namespace hal {
 
-    /*struct thread_context {
-        uint64_t rbx;
-        uint64_t rbp;
-        uint64_t r12;
-        uint64_t r13;
-        uint64_t r14;
-        uint64_t r15;
+    class task_context {
+    private:
         uint64_t rsp;
-    };*/
-
-    struct thread_context {
-        uint64_t rsp;
+        
+    public:
+       	explicit task_context(volatile uintptr_t *stack) : rsp(reinterpret_cast<uint64_t>(stack)) {}
+       	explicit task_context(uintptr_t *stack) : rsp(reinterpret_cast<uint64_t>(stack)) {}
+       	explicit task_context(const hal::isr_frame &frame) : rsp(frame.rsp) {}
+       	
+       	void switch_frame(hal::isr_frame &frame) const {
+       		frame.rsp = rsp;
+       	}
     };
 
-    thread_context create_context(uint64_t *stack, task::task &task);
+    task_context create_context(volatile uint64_t *stack, task::task &task);
 
 } // namespace hal
-
-extern "C" void switch_context(hal::thread_context *curr, hal::thread_context *next);
-extern "C" void start_context();
 
 namespace task {
 

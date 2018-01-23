@@ -57,9 +57,9 @@ namespace task {
         }
     }
 
-    const hal::thread_context &scheduler::schedule(const hal::thread_context &curr_context) {
+    const hal::task_context &scheduler::schedule(const hal::task_context &curr_context) {
         // If no other task is active don't do anything
-        if(m_tasks.size() == 0) {
+        if(m_tasks.is_empty()) {
             return curr_context;
         } else {
             task *curr = m_active;
@@ -74,7 +74,9 @@ namespace task {
             }
 
             // Re-queue the current task and continue the next one
-            m_tasks.enqueue(curr);
+            if(!curr->is_finished()) {
+            	m_tasks.enqueue(curr);
+            }
             m_active = next;
 
             return curr->task_switch(curr_context, *next);

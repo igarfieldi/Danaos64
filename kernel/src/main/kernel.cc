@@ -25,7 +25,7 @@ kernel::kernel(const multiboot_info *mbinfo) {
 }
 
 static void test1() {
-    for(size_t i = 0; i < 5000; ++i) {
+    for(size_t i = 0; i < 5; ++i) {
         kernel::m_console.print("A: {}\n", i);
         volatile unsigned long long j = 0;
         for(unsigned long long v = 1; v < 3000000; ++v) {
@@ -37,7 +37,7 @@ static void test1() {
 }
 
 static void test2() {
-    for(size_t i = 0; i < 4000; ++i) {
+    for(size_t i = 0; i < 4; ++i) {
         kernel::m_console.print("B: {}\n", i);
         volatile unsigned long long j = 0;
         for(unsigned long long v = 1; v < 3000000; ++v) {
@@ -49,7 +49,7 @@ static void test2() {
 }
 
 static void test3() {
-    for(size_t i = 0; i < 3000; ++i) {
+    for(size_t i = 0; i < 3; ++i) {
         kernel::m_console.print("C: {}\n", i);
         volatile unsigned long long j = 0;
         for(unsigned long long v = 1; v < 3000000; ++v) {

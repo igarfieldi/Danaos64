@@ -10,19 +10,23 @@ namespace task {
 
 namespace hal {
 
-    struct thread_context {
-        uint32_t ebx;
-        uint32_t ebp;
-        uint32_t edi;
-        uint32_t esi;
+    class task_context {
+    private:
         uint32_t esp;
+        
+    public:
+       	explicit task_context(volatile uintptr_t *stack) : esp(reinterpret_cast<uint32_t>(stack)) {}
+       	explicit task_context(uintptr_t *stack) : esp(reinterpret_cast<uint32_t>(stack)) {}
+       	explicit task_context(const hal::isr_frame &frame) : esp(frame.esp) {}
+       	
+       	void switch_frame(hal::isr_frame &frame) const {
+       		frame.esp = esp;
+       	}
     };
 
-    thread_context create_context(uint32_t *stack, task::task &task);
+    task_context create_context(volatile uint32_t *stack, task::task &task);
 
 } // namespace hal
-
-extern "C" void switch_context(hal::thread_context *curr, hal::thread_context *next);
 
 namespace task {
 

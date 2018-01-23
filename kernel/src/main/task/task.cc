@@ -31,16 +31,17 @@ namespace task {
         next.m_state = state::RUNNING;
 
         // Swap the state of the tasks and exchange the contexts
-        switch_context(&m_context, &next.m_context);
+        //switch_context(&m_context, &next.m_context);
     }
 
-    const hal::thread_context &task::task_switch(const hal::thread_context &context, task &next) {
-        this->m_state = state::WAITING;
+    const hal::task_context &task::task_switch(const hal::task_context &context, task &next) {
+    	if(m_state == state::RUNNING) {
+        	this->m_state = state::WAITING;
+        }
         next.m_state = state::RUNNING;
 
         // Swap the state of the tasks and exchange the contexts
-        m_context.rsp = context.rsp;
-        //m_context = context;
+        m_context = context;
         return next.m_context;
     }
 

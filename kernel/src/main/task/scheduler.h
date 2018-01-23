@@ -23,7 +23,7 @@ namespace task {
         void block();
 
         void schedule();
-        const hal::thread_context &schedule(const hal::thread_context &curr_context);
+        const hal::task_context &schedule(const hal::task_context &curr_context);
     };
 
 } // namespace task

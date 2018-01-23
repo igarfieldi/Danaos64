@@ -176,20 +176,22 @@ namespace hal {
         void set_no_exec(bool val)                  { m_raw = util::set_bit(m_raw, 63, val); }
     } __attribute__((packed));
 
-    struct page_table {
+    template < class T, size_t E >
+    struct table {
     public:
-        static constexpr size_t ENTRIES = 512;
+        using type = T;
+        static constexpr size_t ENTRIES = E;
     
     private:
-        page_table_entry m_pages[ENTRIES];
+        T m_entries[ENTRIES];
 
     public:
-        page_table_entry &operator[](size_t index) {
-            return m_pages[index];
+        T &operator[](size_t index) {
+            return m_entries[index];
         }
 
-        const page_table_entry &operator[](size_t index) const {
-            return m_pages[index];
+        const T &operator[](size_t index) const {
+            return m_entries[index];
         }
     } __attribute__((packed));
 

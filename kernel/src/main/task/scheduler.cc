@@ -29,13 +29,9 @@ namespace task {
         yield();
     }
 
-    void scheduler::yield() const {
-        __asm__ volatile("int $0" : :);
-    }
-
-    void scheduler::schedule() {
+    void scheduler::yield() {
         // If no other task is active don't do anything
-        if(m_tasks.size() == 0) {
+        if(m_tasks.is_empty()) {
             return ;
         } else {
             task *curr = m_active;
@@ -50,10 +46,12 @@ namespace task {
             }
 
             // Re-queue the current task and continue the next one
-            m_tasks.enqueue(curr);
+            if(!curr->is_finished()) {
+            	m_tasks.enqueue(curr);
+            }
             m_active = next;
 
-            curr->task_switch(*next);
+            return curr->task_switch(*next);
         }
     }
 

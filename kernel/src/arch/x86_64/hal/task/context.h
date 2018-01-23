@@ -28,6 +28,8 @@ namespace hal {
 
 } // namespace hal
 
+extern "C" void switch_context(hal::task_context *curr, hal::task_context *next);
+
 namespace task {
 
     struct task_state_segment {

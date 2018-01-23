@@ -31,7 +31,7 @@ namespace task {
         next.m_state = state::RUNNING;
 
         // Swap the state of the tasks and exchange the contexts
-        //switch_context(&m_context, &next.m_context);
+        switch_context(&m_context, &next.m_context);
     }
 
     const hal::task_context &task::task_switch(const hal::task_context &context, task &next) {

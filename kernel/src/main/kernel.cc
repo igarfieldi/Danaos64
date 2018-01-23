@@ -28,11 +28,10 @@ static void test1() {
     for(size_t i = 0; i < 5; ++i) {
         kernel::m_console.print("A: {}\n", i);
         volatile unsigned long long j = 0;
-        for(unsigned long long v = 1; v < 3000000; ++v) {
+        for(unsigned long long v = 1; v < 1000000; ++v) {
             j += math::logull(10, v);
         }
         task::scheduler::instance().yield();
-        //task::scheduler::instance().schedule();
     }
 }
 
@@ -40,11 +39,10 @@ static void test2() {
     for(size_t i = 0; i < 4; ++i) {
         kernel::m_console.print("B: {}\n", i);
         volatile unsigned long long j = 0;
-        for(unsigned long long v = 1; v < 3000000; ++v) {
+        for(unsigned long long v = 1; v < 1000000; ++v) {
             j += math::logull(10, v);
         }
         task::scheduler::instance().yield();
-        //task::scheduler::instance().schedule();
     }
 }
 
@@ -52,13 +50,11 @@ static void test3() {
     for(size_t i = 0; i < 3; ++i) {
         kernel::m_console.print("C: {}\n", i);
         volatile unsigned long long j = 0;
-        for(unsigned long long v = 1; v < 3000000; ++v) {
+        for(unsigned long long v = 1; v < 1000000; ++v) {
             j += math::logull(10, v);
         }
         task::scheduler::instance().yield();
-        //task::scheduler::instance().schedule();
     }
-    debug::backtrace();
 }
 
 static void run_kernel() {
@@ -68,8 +64,10 @@ static void run_kernel() {
     task::scheduler::instance().ready(task3);
 
     test1();
+    kernel::m_console.print("It's over!\n");
+    debug::backtrace();
     while(true) {
-        task::scheduler::instance().yield();
+        //task::scheduler::instance().yield();
     }
 }
 

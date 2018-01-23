@@ -105,7 +105,7 @@ _endIsr:
 	popq		%rsi
 	popq		%rdi
 	
-	addq		$0x10, %rsp					// Remove error code and interrupt number from stack
+	addq		$16, %rsp					// Remove error code and interrupt number from stack
 	
 	iretq
 

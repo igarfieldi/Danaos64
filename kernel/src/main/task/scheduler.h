@@ -19,10 +19,9 @@ namespace task {
         static scheduler &instance();
         void start(void (*func)(void));
         void ready(task &task);
-        void yield() const;
         void block();
 
-        void schedule();
+        void yield();
         const hal::task_context &schedule(const hal::task_context &curr_context);
     };
 

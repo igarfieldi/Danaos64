@@ -79,7 +79,6 @@ namespace hal {
 
 
 		debug::backtrace();
-		while(true);
 		// TODO: disable interrupts!
 		load_gdt(m_descriptor);
 		kernel::m_console.print("Initialized GDT with {} entries\n", m_index);

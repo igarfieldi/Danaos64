@@ -63,7 +63,7 @@ extern "C" uintptr_t load_elf(elf::header *header) {
 				target_mem[j] = 0;
 			}
 
-			uintptr_t upper = program_headers[i].p_vaddr + program_headers[i].p_memsz;
+			uintptr_t upper = program_headers[i].p_paddr + program_headers[i].p_memsz;
 			highest_address = (upper > highest_address) ? upper : highest_address;
 		}
 	}

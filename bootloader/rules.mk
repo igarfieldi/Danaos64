@@ -84,7 +84,7 @@ clean-bootloader:
 img-bootloader: $(BOOTIMG)
 
 $(BOOTIMG): build-bootloader build-mbr build-imagemk
-	@$(IMAGEMK) -m $(MBRBIN) -b $(BOOTBIN) 506 507 -s 512 $(BOOTIMG)
+	@$(IMAGEMKBIN) -m $(MBRBIN) -b $(BOOTBIN) 506 507 -s 512 $(BOOTIMG)
 
 debug-bootloader: $(BOOTIMG)
 	@echo "    (MAKE)    Debugging bootloader..."

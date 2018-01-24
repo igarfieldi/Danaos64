@@ -37,6 +37,9 @@ namespace hal {
         void init(map_type map) {
             using area_type = typename map_type::entry_type::area_type;
 
+            uintptr_t kernel_phys_begin = reinterpret_cast<uintptr_t>(&KERNEL_PHYS_BEGIN);
+            uintptr_t kernel_phys_end = reinterpret_cast<uintptr_t>(&KERNEL_PHYS_END);
+
             // Compute how many page frames of physical RAM we have
             uint64_t highest_address = 0;
             for(auto &entry : map) {
@@ -63,12 +66,12 @@ namespace hal {
                 // TODO: ensure that we stay within the addressable memory range!
                 // Has to be free and not come before the kernel
                 if(entry.type == area_type::AVAILABLE &&
-                            entry.addr <= reinterpret_cast<uintptr_t>(&KERNEL_PHYS_BEGIN) &&
-                            entry.addr + entry.len > reinterpret_cast<uintptr_t>(&KERNEL_PHYS_END)) {
+                            entry.addr <= kernel_phys_begin &&
+                            entry.addr + entry.len > kernel_phys_end) {
                     // Ensure enough space when considering the kernel
-                    if((reinterpret_cast<uintptr_t>(&KERNEL_PHYS_END) < entry.addr) ||
-                                (entry.addr + entry.len - reinterpret_cast<uintptr_t>(&KERNEL_PHYS_END) >= bitmap_size)) {
-                        uintptr_t after_kernel = math::max<uintptr_t>(entry.addr, reinterpret_cast<uintptr_t>(&KERNEL_PHYS_END));
+                    if((kernel_phys_end < entry.addr) ||
+                                (entry.addr + entry.len - kernel_phys_end >= bitmap_size)) {
+                        uintptr_t after_kernel = math::max<uintptr_t>(entry.addr, kernel_phys_end);
                         size_t entry_length = entry.addr + entry.len - after_kernel;
 
                         // Now check if we overlap with the memory map
@@ -101,7 +104,7 @@ namespace hal {
             phys_mem_manager::instance().init(bitmap_address, page_frame_count);
             
             // Mark kernel frames and everything below 1MB as used
-            phys_mem_manager::instance().alloc_range(0, reinterpret_cast<uintptr_t>(&KERNEL_PHYS_END));
+            phys_mem_manager::instance().alloc_range(0, kernel_phys_end);
             // Mark the RAM areas
             for(auto &entry : map) {
                 if(entry.type != area_type::AVAILABLE) {

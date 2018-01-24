@@ -20,6 +20,14 @@ namespace hal {
         this->alloc_range(bitmap_address, page_frames / CHAR_BIT);
     }
 
+    void phys_mem_manager::change_bitmap_addr(uintptr_t addr) noexcept {
+        m_phys_bitmap = util::bitmap<size_t>(addr, m_phys_bitmap.bits());
+    }
+
+    uintptr_t phys_mem_manager::get_bitmap_addr() const noexcept {
+        return reinterpret_cast<uintptr_t>(m_phys_bitmap.data());
+    }
+
     bool phys_mem_manager::is_available_frame(size_t page_frame) const noexcept {
         return !m_phys_bitmap.get(page_frame);
     }

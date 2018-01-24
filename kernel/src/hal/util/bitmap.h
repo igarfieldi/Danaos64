@@ -10,7 +10,7 @@ namespace util {
 
     template < class T >
     constexpr T get_mask(size_t pos, size_t length) {
-        return ((1 << length) - 1) << pos;
+        return ((T{1} << length) - T{1}) << pos;
     }
 
     template < class T >
@@ -25,12 +25,12 @@ namespace util {
 
     template < class T >
     constexpr T get_bits(T word, size_t pos, size_t length) {
-        return word & ~get_mask<T>(pos, length);
+        return word & get_mask<T>(pos, length);
     }
 
     template < class T >
     constexpr T get_bit(T word, size_t pos) {
-        return word & ~get_mask<T>(pos, 1);
+        return word & get_mask<T>(pos, 1);
     }
 
     // TODO: specialization for word-size so we can use special CPU instructions!
@@ -66,6 +66,22 @@ namespace util {
         }
 
         bitmap(uintptr_t addr, size_t bits) noexcept : bitmap(reinterpret_cast<block_type *>(addr), bits) {
+        }
+
+        size_t bits() const noexcept {
+            return m_bits;
+        }
+
+        size_t size() const noexcept {
+            return m_blocks;
+        }
+
+        block_type *data() {
+            return m_ptr;
+        }
+
+        const block_type *data() const {
+            return m_ptr;
         }
         
         void clear() noexcept {

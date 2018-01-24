@@ -8,36 +8,66 @@
 
 namespace hal {
 
+    static constexpr uintptr_t sign_extend(uintptr_t address) noexcept {
+        return address | 0xFFFF000000000000;
+    }
+
     class virt_mem_manager {
     public:
         static constexpr size_t PAGE_SIZE = 4096;
 
     private:
+        
+
+        /*static constexpr uintptr_t sign_extend(uintptr_t address) noexcept {
+            // AMD64 demands that the top 16 bits match bit 47
+            if constexpr(address & (uintptr_t{1} << 47)) {
+                return address | 0xFFFF000000000000;
+            } else {
+                return address & 0xFFFF000000000000;
+            }
+        }*/
+
+        static constexpr size_t RECUR_MAP_INDEX = 510;
+        static constexpr uintptr_t PAGE_TBL_REC = sign_extend(RECUR_MAP_INDEX << 39);
+        static constexpr uintptr_t PAGE_DIR_REC = sign_extend(PAGE_TBL_REC + (RECUR_MAP_INDEX << 30));
+        static constexpr uintptr_t PAGE_DIR_PTR_REC = sign_extend(PAGE_DIR_REC + (RECUR_MAP_INDEX << 21));
+        static constexpr uintptr_t PAGE_MAP_REC = sign_extend(PAGE_DIR_PTR_REC + (RECUR_MAP_INDEX << 12));
+
         static constexpr size_t map_index(uintptr_t address) noexcept {
-            return address / (PAGE_SIZE * page_table::ENTRIES * page_dir::ENTRIES * page_dir_ptr::ENTRIES);
+            return (address >> 39) & 511;
         }
 
         static constexpr size_t dir_ptr_index(uintptr_t address) noexcept {
-            return address / (PAGE_SIZE * page_table::ENTRIES * page_dir::ENTRIES);
+            return (address >> 30) & 511;
         }
+
         static constexpr size_t dir_index(uintptr_t address) noexcept {
-            return address / (PAGE_SIZE * page_table::ENTRIES);
+            return (address >> 21) & 511;
         }
         
         static constexpr size_t table_index(uintptr_t address) noexcept {
-            return address / PAGE_SIZE;
+            return (address >> 12) & 511;
         }
 
-        static constexpr uintptr_t table_index(size_t map, size_t dir_ptr, size_t dir, size_t table) noexcept {
-            return (((map * page_dir_ptr::ENTRIES
-                    + dir_ptr) * page_dir::ENTRIES
-                    + dir) * page_table::ENTRIES
-                    + table) * PAGE_SIZE;
+        static constexpr uintptr_t address(size_t pml4e, size_t pdpe, size_t pde, size_t pte) noexcept {
+            return (((pml4e * page_dir_ptr::ENTRIES
+                    + pdpe) * page_dir::ENTRIES
+                    + pde) * page_table::ENTRIES
+                    + pte) * PAGE_SIZE;
         }
 
         static void set_page_directory(uintptr_t phys_dir_addr);
+        void map_pre_paging(uintptr_t virt, uintptr_t phys);
 
-        volatile page_map *m_page_map;
+
+
+        const uintptr_t VIRT_OFFSET;
+        page_map *m_page_map_phys;
+        page_map *m_page_map;
+        page_dir_ptr *m_page_dir_ptr;
+        page_dir *m_page_dir;
+        page_table *m_page_table;
         
         virt_mem_manager() noexcept;
     

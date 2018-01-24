@@ -1,4 +1,4 @@
 set architecture i386:x86-64
 add-symbol-file bootloader/build/x86_64/bin/bootloader-symbols.sym 0x7C00
-add-symbol-file kernel/build/x86_64/bin/kernel-symbols.sym 0xFFFFFFFF80100000
+add-symbol-file kernel/build/x86_64/bin/kernel-symbols.sym 0xFFFFFFFF00100028
 target remote:1234

@@ -31,6 +31,7 @@ namespace hal {
         constexpr bool is_accessed() const              { return util::get_bit(m_raw, 5); }
         constexpr uintptr_t get_dir_ptr_addr() const    { return util::get_bits(m_raw, 12, 40); }
         constexpr bool is_no_exec() const               { return util::get_bit(m_raw, 63); }
+        uint64_t get_raw() {return m_raw; }
         
         void set_present(bool val)                      { m_raw = util::set_bit(m_raw, 0, val); }
         void set_read_write(bool val)                   { m_raw = util::set_bit(m_raw, 1, val); }
@@ -212,30 +213,79 @@ namespace hal {
         void set_no_exec(bool val)                  { m_raw = util::set_bit(m_raw, 63, val); }
     } __attribute__((packed));
 
-    template < class T, size_t E >
-    struct table {
+    struct page_map {
     public:
-        using type = T;
-        static constexpr size_t ENTRIES = E;
+        static constexpr size_t ENTRIES = 512;
     
     private:
-        T m_entries[ENTRIES];
+         page_map_entry m_entries[ENTRIES];
 
     public:
-        T &operator[](size_t index) {
-            return m_entries[index];
+         page_map_entry &entry(size_t pml4e)  noexcept {
+            return m_entries[pml4e];
         }
 
-        const T &operator[](size_t index) const {
-            return m_entries[index];
+         const page_map_entry &entry(size_t pml4e) const  noexcept {
+            return m_entries[pml4e];
         }
     } __attribute__((packed));
 
+    struct page_dir_ptr {
+    public:
+        static constexpr size_t ENTRIES = 512;
+    
+    private:
+         page_dir_ptr_entry m_entries[page_map::ENTRIES * ENTRIES];
 
-    using page_table = table<page_table_entry, 512>;
-    using page_dir = table<page_dir_entry, 512>;
-    using page_dir_ptr = table<page_dir_ptr_entry, 512>;
-    using page_map = table<page_map_entry, 512>;
+    public:
+         page_dir_ptr_entry &entry(size_t pml4e, size_t pdpe)  noexcept {
+            return m_entries[pdpe + pml4e * page_map::ENTRIES];
+        }
+
+         const page_dir_ptr_entry &entry(size_t pml4e, size_t pdpe) const  noexcept {
+            return m_entries[pdpe + pml4e * page_map::ENTRIES];
+        }
+    } __attribute__((packed));
+
+    struct page_dir {
+    public:
+        static constexpr size_t ENTRIES = 512;
+    
+    private:
+         page_dir_entry m_entries[page_map::ENTRIES * page_dir_ptr::ENTRIES * ENTRIES];
+
+    public:
+         page_dir_entry &entry(size_t pml4e, size_t pdpe, size_t pde)  noexcept {
+            return m_entries[pml4e * page_map::ENTRIES * page_dir_ptr::ENTRIES +
+                                pdpe * page_dir_ptr::ENTRIES + pde];
+        }
+
+         const page_dir_entry &entry(size_t pml4e, size_t pdpe, size_t pde) const  noexcept {
+            return m_entries[pml4e * page_map::ENTRIES * page_dir_ptr::ENTRIES +
+                                pdpe * page_dir_ptr::ENTRIES + pde];
+        }
+    } __attribute__((packed));
+
+    struct page_table {
+    public:
+        static constexpr size_t ENTRIES = 512;
+    
+    private:
+         page_table_entry m_entries[page_map::ENTRIES * page_dir_ptr::ENTRIES * page_dir::ENTRIES * ENTRIES];
+
+    public:
+         page_table_entry &entry(size_t pml4e, size_t pdpe, size_t pde, size_t pte)  noexcept {
+            return m_entries[pml4e * page_map::ENTRIES * page_dir_ptr::ENTRIES * page_dir::ENTRIES +
+                                pdpe * page_dir_ptr::ENTRIES * page_dir::ENTRIES +
+                                pde *  page_dir::ENTRIES + pte];
+        }
+
+         const page_table_entry &entry(size_t pml4e, size_t pdpe, size_t pde, size_t pte) const  noexcept {
+            return m_entries[pml4e * page_map::ENTRIES * page_dir_ptr::ENTRIES * page_dir::ENTRIES +
+                                pdpe * page_dir_ptr::ENTRIES * page_dir::ENTRIES +
+                                pde *  page_dir::ENTRIES + pte];
+        }
+    } __attribute__((packed));
 
 } // namespace hal
 

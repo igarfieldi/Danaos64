@@ -39,6 +39,8 @@ namespace hal {
         static phys_mem_manager &instance() noexcept;
 
         void init(uintptr_t bitmap_address, size_t page_frames) noexcept;
+        void change_bitmap_addr(uintptr_t addr) noexcept;
+        uintptr_t get_bitmap_addr() const noexcept;
 
         bool is_available_frame(size_t page_frame) const noexcept;
         bool is_available_frame(size_t page_frame, size_t frame_count) const noexcept;

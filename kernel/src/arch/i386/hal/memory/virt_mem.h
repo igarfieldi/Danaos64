@@ -28,7 +28,7 @@ namespace hal {
         static void set_page_directory(uintptr_t phys_dir_addr);
 
         page_dir_entry *m_page_directory;
-        table<page_dir_ptr_entry> *m_tables;
+        page_table *m_tables;
 
         virt_mem_manager() noexcept;
     

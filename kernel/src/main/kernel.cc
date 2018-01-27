@@ -13,6 +13,7 @@
 #include "libk/math.h"
 #include "debug/trace.h"
 #include "hal/memory/memmanager.h"
+#include "hal/hal.h"
 
 console kernel::m_console;
 elf::symbol_lookup kernel::m_elf_lookup;
@@ -175,11 +176,12 @@ extern "C" void kernelMain(uint32_t magic, uintptr_t info) {
 			symbols = symbolHeader->sh_size / sizeof(elf::symbol);
 		}
 		kernel::m_elf_lookup.init(stringTable, strings, symbolTable, symbols);
-		debug::backtrace(2);
     }
 
-    kernel::m_console.print("Kernel loaded!\n");
+    hal::init_hal();
 
+    kernel::m_console.print("Kernel loaded!\n");
+	debug::backtrace();
 
     while(true);
 }

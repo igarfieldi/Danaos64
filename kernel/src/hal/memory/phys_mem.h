@@ -16,6 +16,10 @@ namespace hal {
     class phys_mem_manager {
     public:
         static constexpr size_t PAGE_FRAME_SIZE = 4096;
+    	
+    	static constexpr size_t page_count(size_t bytes) noexcept {
+    		return (bytes - 1) / PAGE_FRAME_SIZE + 1;
+    	}
 
     private:
     	static constexpr size_t INIT_BITMAP_SIZE = 0x20000;
@@ -47,6 +51,8 @@ namespace hal {
         template < class map_type >
         void init(map_type map) noexcept {
         	using area_type = typename map_type::entry_type::area_type;
+            
+            kernel::m_console.print("Initializing PMM...\n");
 
 			// Do the first (provisional) initialization of the pmm with the bitmap alloc'ed in the binary
 			uintptr_t virt = reinterpret_cast<uintptr_t>(&_phys_bitmap);
@@ -67,11 +73,10 @@ namespace hal {
                     highest_address = entry.addr + entry.len;
                 }
                 
-
-                kernel::m_console.print("Address: [], Length: {}, Type: {}\n",
-                    entry.addr, entry.len, static_cast<uint32_t>(entry.type));
             }
             size_t page_frame_count = highest_address / phys_mem_manager::PAGE_FRAME_SIZE;
+            
+            kernel::m_console.print("\tRAM          : [] MB\n", highest_address / 0x100000);
             
 			// Mark kernel frames and everything below 1MB as used
 			hal::phys_mem_manager::instance().alloc_range(0, reinterpret_cast<uintptr_t>(&KERNEL_PHYS_END));
@@ -81,7 +86,7 @@ namespace hal {
             	kernel::m_console.print("Warning: more RAM installed than currently handleable by PMM!\n");
             }
 
-            kernel::m_console.print("Kernel: [] - []\n", reinterpret_cast<uintptr_t>(&KERNEL_PHYS_BEGIN),
+            kernel::m_console.print("\tKernel phys  : [] - []\n", reinterpret_cast<uintptr_t>(&KERNEL_PHYS_BEGIN),
                                 reinterpret_cast<uintptr_t>(&KERNEL_PHYS_END));
         }
         

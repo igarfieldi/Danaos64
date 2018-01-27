@@ -2,6 +2,9 @@
 #include "main/kernel.h"
 
 namespace debug {
+	void backtrace() {
+		backtrace(~size_t{0});
+	}
 
 	void backtrace(size_t maxFrames) {
 		uintptr_t *ebp = nullptr;
@@ -22,6 +25,9 @@ namespace debug {
 			
 			ebp = reinterpret_cast<uintptr_t*>(ebp[0]);
 			const char *name = kernel::m_elf_lookup.lookup(*eip);
+			if((name == nullptr) || (*name == '\0')) {
+				return ;
+			}
 			kernel::m_console.print("  []\t-- {}\n", *eip, name);
 		}
 	}

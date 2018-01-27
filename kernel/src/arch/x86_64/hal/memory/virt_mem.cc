@@ -78,6 +78,8 @@ namespace hal {
     }
 
     void virt_mem_manager::init() noexcept {
+        kernel::m_console.print("Initializing VMM...\n");
+
         // Allocate a new page frame for the page directory
         uintptr_t page_map_phys = phys_mem_manager::instance().alloc_any();
         m_page_map_phys = reinterpret_cast<page_map *>(page_map_phys);
@@ -95,6 +97,8 @@ namespace hal {
         uintptr_t virt_begin = reinterpret_cast<uintptr_t>(&KERNEL_VIRT_BEGIN);
         uintptr_t virt_end = reinterpret_cast<uintptr_t>(&KERNEL_VIRT_END);
         uintptr_t curr_phys = reinterpret_cast<uintptr_t>(&KERNEL_PHYS_BEGIN);
+        
+        kernel::m_console.print("\tKernel virt  : [] - []\n", virt_begin, virt_end);
 
         // TODO: distinction into read-only and such
         // TODO: use large pages if possible?

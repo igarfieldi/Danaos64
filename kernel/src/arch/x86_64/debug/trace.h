@@ -6,6 +6,7 @@
 
 namespace debug {
 
+	void backtrace();
 	void backtrace(size_t maxFrames);
 
 } // namespace debug

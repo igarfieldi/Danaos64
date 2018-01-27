@@ -2,7 +2,7 @@
 
 namespace hal {
 
-    memory_manager::memory_manager() noexcept : m_vkernel_curr(0), m_vkernel_alloced(0) {
+    memory_manager::memory_manager() noexcept : m_vheap_start(0), m_vheap_end(0), m_vheap_curr(0), m_vheap_alloced(0) {
     }
 
     memory_manager &memory_manager::instance() noexcept {
@@ -11,8 +11,9 @@ namespace hal {
     }
     
     void memory_manager::init() noexcept {
-        m_vkernel_curr = virt_mem_manager::instance().vkernel_start();
-        m_vkernel_alloced = virt_mem_manager::instance().vkernel_start();
+        m_vheap_start = virt_mem_manager::instance().vkernel_start();
+        m_vheap_end = virt_mem_manager::instance().vkernel_end();
+        m_vheap_curr = m_vheap_alloced = m_vheap_start;
     }
     
     uintptr_t memory_manager::kernel_alloc_pages(uintptr_t phys, size_t size) noexcept {
@@ -25,19 +26,21 @@ namespace hal {
 		if(size == 0) {
 			return 0;
 		}
+
+		m_vheap_curr = m_vheap_alloced = virt_mem_manager::align_up(m_vheap_curr);
 		
 		size_t pages = virt_mem_manager::page_count(size);
 		
-		if(m_vkernel_alloced + virt_mem_manager::PAGE_SIZE * pages > virt_mem_manager::instance().vkernel_end()) {
+		if(m_vheap_alloced + virt_mem_manager::PAGE_SIZE * pages > virt_mem_manager::instance().vkernel_end()) {
 			// Out of kernel memory
 			kernel::panic("Out of kernel memory!");
 		}
-		uintptr_t ret_addr = m_vkernel_alloced + addr_diff;
+		uintptr_t ret_addr = m_vheap_alloced + addr_diff;
 		// Map the requested pages
-		virt_mem_manager::instance().map(m_vkernel_alloced, aligned_phys, pages, true, false, false);
+		virt_mem_manager::instance().map(m_vheap_alloced, aligned_phys, pages, true, false, false);
 		// Move the allocation mark to the latest allocated page
-		m_vkernel_alloced += virt_mem_manager::PAGE_SIZE * pages;
-		m_vkernel_curr = m_vkernel_alloced;
+		m_vheap_alloced += virt_mem_manager::PAGE_SIZE * pages;
+		m_vheap_curr = m_vheap_alloced;
 		
 		return ret_addr;
 	}

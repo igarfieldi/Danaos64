@@ -73,16 +73,12 @@ namespace hal {
     	extern void load_gdt(descriptor desc) __asm__("_load_gdt");
 
 		m_descriptor.size = static_cast<uint16_t>(sizeof(entry) * m_index - 1);
+		
+		// TODO: disable interrupts!
+		load_gdt(m_descriptor);
 
 		kernel::m_console.print("\tGDT off      : []\n", m_descriptor.offset);
 		kernel::m_console.print("\tGDT size     : {}\n", m_descriptor.size);
-
-
-		debug::backtrace();
-		while(true);
-		// TODO: disable interrupts!
-		load_gdt(m_descriptor);
-		kernel::m_console.print("Initialized GDT with {} entries\n", m_index);
 	}
 
 } // namespace hal

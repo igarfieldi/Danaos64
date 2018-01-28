@@ -6,16 +6,16 @@
 
 namespace hal {
 
+	enum class dpl_level : uint8_t {
+		RING_0 = 0,
+		RING_1 = 1,
+		RING_2 = 2,
+		RING_3 = 3
+	};
+
 	class glob_desc_table {
 	public:
 		static constexpr uint16_t INVALID_INDEX = 65535;
-
-		enum class dpl_level {
-			RING_0 = 0,
-			RING_1 = 1,
-			RING_2 = 2,
-			RING_3 = 3
-		};
 
 		class entry {
 		private:
@@ -68,11 +68,6 @@ namespace hal {
 				m_raw |= (limit & 0xFFFF) | (uint64_t{limit & 0xF0000} << 48);
 			}
 		} __attribute__((packed));
-
-		struct descriptor {
-			uint16_t size;
-			uint64_t offset;
-		} __attribute__((packed));
 		
 		class selector {
 		private:
@@ -100,6 +95,11 @@ namespace hal {
 		} __attribute__((packed));
 
 	private:
+		struct descriptor {
+			uint16_t size;
+			uint64_t offset;
+		} __attribute__((packed));
+
 		uint16_t m_capacity, m_index;
 		entry *m_entries;
 		descriptor m_descriptor;

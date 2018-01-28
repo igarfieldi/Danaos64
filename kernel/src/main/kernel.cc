@@ -11,7 +11,6 @@
 #include "elf/elf.h"
 #include "devices/cga.h"
 #include "libk/math.h"
-#include "debug/trace.h"
 #include "hal/memory/memmanager.h"
 #include "hal/hal.h"
 
@@ -181,7 +180,10 @@ extern "C" void kernelMain(uint32_t magic, uintptr_t info) {
     hal::init_hal();
 
     kernel::m_console.print("Kernel loaded!\n");
-	debug::backtrace();
+
+    int i = 5;
+    i /= 0;
+    kernel::m_console.print("I: {}\n", i);
 
     while(true);
 }

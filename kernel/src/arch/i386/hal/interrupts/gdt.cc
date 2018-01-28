@@ -59,14 +59,23 @@ namespace hal {
 		}
 	}
 
-	glob_desc_table::entry &glob_desc_table::get_entry(uint16_t index) noexcept {
-		if(index < m_capacity) {
-			return m_entries[index];
-		} else {
-			static entry def;
+	glob_desc_table::entry &glob_desc_table::get_entry(uint16_t index) const noexcept {
+		if(index >= m_capacity) {
 			kernel::panic("Invalid GDT index!");
-			return def;
 		}
+
+		return m_entries[index];
+	}
+
+	glob_desc_table::selector glob_desc_table::get_selector(uint16_t index) const noexcept {
+		if(index >= m_capacity) {
+			kernel::panic("Invalid GDT index!");
+		}
+		return selector(m_entries[index].get_privilege_level(), false, index);
+	}
+
+	glob_desc_table::selector glob_desc_table::get_kernel_selector() const noexcept {
+		return selector(m_entries[KERNEL_CODE_INDEX].get_privilege_level(), false, KERNEL_CODE_INDEX);
 	}
 	
 	void glob_desc_table::load() noexcept {
@@ -77,8 +86,8 @@ namespace hal {
 		// TODO: disable interrupts!
 		load_gdt(m_descriptor);
 
-		kernel::m_console.print("\tGDT off      : []\n", m_descriptor.offset);
-		kernel::m_console.print("\tGDT size     : {}\n", m_descriptor.size);
+		kernel::m_console.print("  GDT off      : []\n", m_descriptor.offset);
+		kernel::m_console.print("  GDT size     : {}\n", m_descriptor.size);
 	}
 
 } // namespace hal

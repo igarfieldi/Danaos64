@@ -98,7 +98,7 @@ namespace hal {
         uintptr_t virt_end = reinterpret_cast<uintptr_t>(&KERNEL_VIRT_END);
         uintptr_t curr_phys = reinterpret_cast<uintptr_t>(&KERNEL_PHYS_BEGIN);
         
-        kernel::m_console.print("\tKernel virt  : [] - []\n", virt_begin, virt_end);
+        kernel::m_console.print("  Kernel virt  : [] - []\n", virt_begin, virt_end);
 
         // TODO: distinction into read-only and such
         // TODO: use large pages if possible?

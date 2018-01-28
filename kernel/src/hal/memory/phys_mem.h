@@ -76,7 +76,7 @@ namespace hal {
             }
             size_t page_frame_count = highest_address / phys_mem_manager::PAGE_FRAME_SIZE;
             
-            kernel::m_console.print("\tRAM          : [] MB\n", highest_address / 0x100000);
+            kernel::m_console.print("  RAM          : [] MB\n", highest_address / 0x100000);
             
 			// Mark kernel frames and everything below 1MB as used
 			hal::phys_mem_manager::instance().alloc_range(0, reinterpret_cast<uintptr_t>(&KERNEL_PHYS_END));
@@ -86,7 +86,7 @@ namespace hal {
             	kernel::m_console.print("Warning: more RAM installed than currently handleable by PMM!\n");
             }
 
-            kernel::m_console.print("\tKernel phys  : [] - []\n", reinterpret_cast<uintptr_t>(&KERNEL_PHYS_BEGIN),
+            kernel::m_console.print("  Kernel phys  : [] - []\n", reinterpret_cast<uintptr_t>(&KERNEL_PHYS_BEGIN),
                                 reinterpret_cast<uintptr_t>(&KERNEL_PHYS_END));
         }
         

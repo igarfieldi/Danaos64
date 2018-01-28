@@ -95,6 +95,11 @@ namespace hal {
 		} __attribute__((packed));
 
 	private:
+		static constexpr uint16_t KERNEL_CODE_INDEX = 1;
+		static constexpr uint16_t KERNEL_DATA_INDEX = 2;
+		static constexpr uint16_t USER_CODE_INDEX = 3;
+		static constexpr uint16_t USER_DATA_INDEX = 4;
+
 		struct descriptor {
 			uint16_t size;
 			uint64_t offset;
@@ -118,7 +123,10 @@ namespace hal {
 
 		uint16_t push_entry(entry entry) noexcept;
 		void set_entry(entry entry, uint16_t index) noexcept;
-		entry &get_entry(uint16_t index) noexcept;
+		entry &get_entry(uint16_t index) const noexcept;
+
+		selector get_selector(uint16_t index) const noexcept;
+		selector get_kernel_selector() const noexcept;
 
 		void load() noexcept;
 	};

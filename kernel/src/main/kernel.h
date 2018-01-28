@@ -4,6 +4,7 @@
 #include "main/console.h"
 #include "boot/multiboot2.h"
 #include "elf/elf.h"
+#include "debug/trace.h"
 
 
 struct multiboot_info {
@@ -20,6 +21,8 @@ public:
     static void __attribute__((noreturn)) panic(const char *msg, Args... args) {
         kernel::m_console.print("PANIC: ");
         kernel::m_console.print(msg, static_cast<Args&&>(args)...);
+        kernel::m_console.print("\n");
+	    debug::backtrace();
         while(true);
     }
     

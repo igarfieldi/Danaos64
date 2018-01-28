@@ -4,12 +4,13 @@
 #include <stdint.h>
 #include "hal/interrupts/gdt.h"
 #include "hal/util/bitmap.h"
+#include "hal/interrupts/isr_count.h"
 
 namespace hal {
 
 	class int_desc_table {
 	public:
-		static constexpr uint16_t GATE_COUNT = 256;
+		static constexpr uint16_t GATE_COUNT = ISR_COUNT;
 
 		enum class gate_type : uint8_t {
 			INTERRUPT = 14,

@@ -1,12 +1,8 @@
 #include "idt.h"
 #include "main/kernel.h"
+#include "hal/interrupts/interrupts.h"
 
 extern void (*_isr_addresses[hal::int_desc_table::GATE_COUNT])();
-
-extern "C" void isr_handler(void *isr_state) {
-	kernel::m_console.print("Interrupt called!\n");
-	while(true);
-}
 
 namespace hal {
 

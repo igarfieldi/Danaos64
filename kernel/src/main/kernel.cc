@@ -13,6 +13,7 @@
 #include "libk/math.h"
 #include "hal/memory/memmanager.h"
 #include "hal/hal.h"
+#include "hal/interrupts/interrupts.h"
 
 console kernel::m_console;
 elf::symbol_lookup kernel::m_elf_lookup;
@@ -181,6 +182,8 @@ extern "C" void kernelMain(uint32_t magic, uintptr_t info) {
 
     kernel::m_console.print("Kernel loaded!\n");
 
+    hal::test_isr test;
+    hal::isr_dispatcher::instance().register_isr(0, test);
     int i = 5;
     i /= 0;
     kernel::m_console.print("I: {}\n", i);

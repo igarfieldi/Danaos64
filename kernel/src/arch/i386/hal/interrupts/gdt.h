@@ -34,9 +34,9 @@ namespace hal {
 					bool gran4kb) noexcept : m_raw((limit & 0xFFFF) | (uint64_t{base & 0xFFFFFF} << 16)
 													| (uint64_t{rw} << 41) | (uint64_t{down} << 42) | (uint64_t{exec} << 43)
 													| (uint64_t{1} << 44) | (static_cast<uint64_t>(priv) << 45)
-													| (uint64_t{present} << 47) | (uint64_t{limit & 0xF0000} << 48)
+													| (uint64_t{present} << 47) | (uint64_t{limit & 0xF0000} << 32)
 													| (uint64_t{size32} << 54) | (uint64_t{gran4kb} << 55)
-													| (uint64_t{base & 0xFFFFFF} << 56)) {}
+													| (uint64_t{base & 0xFF000000} << 32)) {}
 
 			constexpr bool is_accessed() const				{ return util::get_bit(m_raw, 40); }
 			constexpr bool is_read_write() const			{ return util::get_bit(m_raw, 41); }
@@ -60,12 +60,12 @@ namespace hal {
 
 			void set_base_address(uint32_t addr) {
 				m_raw &= 0xFF0000FFFFFF0000;
-				m_raw |= (uint64_t{addr & 0xFFFFFF} << 16) | (uint64_t{addr & 0xFF000000} << 56);
+				m_raw |= (uint64_t{addr & 0xFFFFFF} << 16) | (uint64_t{addr & 0xFF000000} << 32);
 			}
 
 			void set_limit(uint32_t limit) {
 				m_raw &= 0x000F00000000FFFF;
-				m_raw |= (limit & 0xFFFF) | (uint64_t{limit & 0xF0000} << 48);
+				m_raw |= (limit & 0xFFFF) | (uint64_t{limit & 0xF0000} << 32);
 			}
 		} __attribute__((packed));
 		

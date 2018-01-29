@@ -1,10 +1,9 @@
 #include "interrupts.h"
 #include "main/kernel.h"
 
-extern "C" void isr_handler(void *isr_state) {
-	(void) isr_state;
-	size_t index = reinterpret_cast<uint32_t*>(isr_state)[3];
-	hal::isr_dispatcher::instance().trigger(index);
+extern "C" void isr_handler(hal::isr_frame_equal_priv *isr_state) {
+	kernel::m_console.print("Interrupt: [] err []\n", isr_state->int_num, isr_state->error_code);
+	hal::isr_dispatcher::instance().trigger(isr_state->int_num);
 }
 
 namespace hal {

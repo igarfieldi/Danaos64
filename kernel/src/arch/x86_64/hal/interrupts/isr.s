@@ -11,22 +11,22 @@
 .macro gen_normal_isr
 	.align		16					// We have to align this as the wrapper size apparently varies...
 isr_wrapper_\@:
-    pushl		$0					// To replace the missing error code, we push a zero onto the stack
-    pushl		$\@
+    pushq		$0					// To replace the missing error code, we push a zero onto the stack
+    pushq		$\@
 	jmp			isr_caller
 .endm
 
 .macro gen_error_isr
 	.align		16					// We have to align this as the wrapper size apparently varies...
 isr_wrapper_\@:
-    pushl		$\@
+    pushq		$\@
 	jmp			isr_caller
 .endm
 
 // Gives us the addresses of our wrappers continuously
 .altmacro
 .macro isr_addrs curr end
-	.long		isr_wrapper_\curr
+	.quad		isr_wrapper_\curr
 	.if \end - \curr
 		isr_addrs %(\curr + 1), \end
 	.endif
@@ -77,25 +77,38 @@ isr_caller:
 													// with C calling convention
 	
 	// Save the registers mandated by CDECL (rest will be saved by callee if used)
-	pushl		%edx
-	pushl		%ecx
-	pushl		%eax
+	pushq		%rdi
+	pushq		%rsi
+	pushq		%r11
+	pushq		%r10
+	pushq		%r9
+	pushq		%r8
+	pushq		%rdx
+	pushq		%rcx
+	pushq		%rax
+	pushq		%rsp
 
 	// Argument will be interrupt state
-	pushl		%esp
+	movq		%rsp, %rdi
 	call		isr_handler							// External function calling the actual handler
 
 _endIsr:
-	addl		$4, %esp
 
 	// Restore the registers
-	popl		%eax
-	popl		%ecx
-	popl		%edx
+	popq		%rsp
+	popq		%rax
+	popq		%rcx
+	popq		%rdx
+	popq		%r8
+	popq		%r9
+	popq		%r10
+	popq		%r11
+	popq		%rsi
+	popq		%rdi
 	
-	addl		$8, %esp					// Remove error code and interrupt number from stack
+	addq		$16, %rsp					// Remove error code and interrupt number from stack
 	
-	iret
+	iretq
 
 .section		.data
 .align			32

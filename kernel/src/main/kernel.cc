@@ -184,9 +184,8 @@ extern "C" void kernelMain(uint32_t magic, uintptr_t info) {
 
     hal::test_isr test;
     hal::isr_dispatcher::instance().register_isr(0, test);
-    int i = 5;
-    i /= 0;
-    kernel::m_console.print("I: {}\n", i);
+
+	__asm__ volatile("int $0" : :);
 
     while(true);
 }

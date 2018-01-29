@@ -2,7 +2,7 @@
 #define DANAOS_HAL_INTERRUPTS_INTERRUPTS_H_
 
 #include <stddef.h>
-#include "hal/interrupts/isr_count.h"
+#include "hal/interrupts/isr_arch.h"
 #include "main/kernel.h"
 
 namespace hal {

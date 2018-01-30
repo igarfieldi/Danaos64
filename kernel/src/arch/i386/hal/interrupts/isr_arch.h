@@ -9,6 +9,7 @@ namespace hal {
 	constexpr size_t ISR_COUNT = 256;
 
 	struct isr_registers {
+		uint32_t esp;
 		uint32_t eax;
 		uint32_t ecx;
 		uint32_t edx;

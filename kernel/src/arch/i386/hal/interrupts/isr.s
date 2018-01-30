@@ -80,6 +80,7 @@ isr_caller:
 	pushl		%edx
 	pushl		%ecx
 	pushl		%eax
+	pushl		%esp
 
 	// Argument will be interrupt state
 	pushl		%esp
@@ -89,6 +90,7 @@ _endIsr:
 	addl		$4, %esp
 
 	// Restore the registers
+	popl		%esp
 	popl		%eax
 	popl		%ecx
 	popl		%edx

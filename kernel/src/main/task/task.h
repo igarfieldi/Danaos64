@@ -1,0 +1,52 @@
+#ifndef DANAOS_MAIN_TASK_TASK_H_
+#define DANAOS_MAIN_TASK_TASK_H_
+
+#include "hal/task/context.h"
+
+#include <stdint.h>
+
+namespace task {
+
+    class task {
+    public:
+        enum class state {
+            CREATED,
+            READY,
+            RUNNING,
+            WAITING,
+            BLOCKED,
+            FINISHED
+        };
+
+    private:
+        static constexpr size_t STACK_SIZE = 512;
+        uintptr_t stack[STACK_SIZE];
+        hal::thread_context m_context;
+        state m_state;
+        void (*m_func)();
+
+    public:
+        task(void (*start)());
+        static void start(task &task);
+
+        constexpr bool is_ready() const {
+            return (m_state == state::READY) || (m_state == state::WAITING);
+        }
+
+        constexpr bool is_blocked() const {
+            return m_state == state::BLOCKED;
+        }
+
+        constexpr bool is_finished() const {
+            return m_state == state::FINISHED;
+        }
+
+        void block();
+        void ready();
+
+        const hal::thread_context &task_switch(const hal::thread_context &context, task &next);
+    };
+
+}
+
+#endif //DANAOS_MAIN_TASK_TASK_H_

@@ -87,11 +87,13 @@ namespace hal {
 
 			constexpr bool is_local() const					{ return util::get_bit(m_raw, 2); }
 			constexpr dpl_level get_privilege_level() const	{ return static_cast<dpl_level>(util::get_bits(m_raw, 0, 2)); }
-			constexpr uint16_t get_index() const			{ return (m_raw & 0xFFF8) << 3; }
+			constexpr uint16_t get_index() const			{ return (m_raw & 0xFFF8) >> 3; }
+			constexpr uint16_t get_segment_selector() const	{ return (m_raw & 0xFFF8); }
 
 			void set_local(bool local) 						{ m_raw = util::set_bit(m_raw, 2, local); }
 			void set_privilege_level(dpl_level lvl) 		{ m_raw = util::set_bits(m_raw, 0, 2, static_cast<uint16_t>(lvl)); }
 			void set_index(uint16_t index) 					{ m_raw &= 0x7; m_raw |= ((index & 0x1FFF) << 3); }
+			void set_segment_selector(uint16_t sel) 		{ m_raw &= 0x7; m_raw |= (sel & 0x1FFF); }
 		} __attribute__((packed));
 
 	private:

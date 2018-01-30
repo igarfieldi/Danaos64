@@ -14,6 +14,7 @@
 #include "hal/memory/memmanager.h"
 #include "hal/hal.h"
 #include "hal/interrupts/interrupts.h"
+#include "main/task/scheduler.h"
 
 console kernel::m_console;
 elf::symbol_lookup kernel::m_elf_lookup;
@@ -23,13 +24,59 @@ kernel::kernel(const multiboot_info *mbinfo) {
 	debug::backtrace(2);
 }
 
+static void test1() {
+    for(size_t i = 0; i < 5; ++i) {
+        kernel::m_console.print("A: {}\n", i);
+        volatile unsigned long long j = 0;
+        for(unsigned long long v = 1; v < 1000000; ++v) {
+            j += math::logull(10, v);
+        }
+        task::scheduler::instance().yield();
+    }
+}
+
+static void test2() {
+    for(size_t i = 0; i < 4; ++i) {
+        kernel::m_console.print("B: {}\n", i);
+        volatile unsigned long long j = 0;
+        for(unsigned long long v = 1; v < 1000000; ++v) {
+            j += math::logull(10, v);
+        }
+        task::scheduler::instance().yield();
+    }
+}
+
+static void test3() {
+    for(size_t i = 0; i < 3; ++i) {
+        kernel::m_console.print("C: {}\n", i);
+        volatile unsigned long long j = 0;
+        for(unsigned long long v = 1; v < 1000000; ++v) {
+            j += math::logull(10, v);
+        }
+        task::scheduler::instance().yield();
+    }
+    debug::backtrace();
+}
+
+static void run_kernel() {
+    task::task task2(test2);
+    task::task task3(test3);
+    task::scheduler::instance().ready(task2);
+    task::scheduler::instance().ready(task3);
+
+    test1();
+    while(true) {
+        task::scheduler::instance().yield();
+    }
+}
+
 extern "C" void kernelMain(uint32_t magic, uintptr_t info) {
     if (magic != MULTIBOOT2_BOOTLOADER_MAGIC) {
         kernel::m_console.print("Error: The kernel was not loaded by a multiboot loader!");
         while(true);
     }
 
-    const multiboot_info *mbinfo = reinterpret_cast<multiboot_info*>(info);
+    multiboot_info *mbinfo = reinterpret_cast<multiboot_info *>(info);
     const multiboot_tag_elf_sections *elf_sections = nullptr;
     const multiboot_tag_framebuffer_common *framebuffer = nullptr;
     multiboot_tag_mmap* memmap = nullptr;
@@ -182,10 +229,12 @@ extern "C" void kernelMain(uint32_t magic, uintptr_t info) {
 
     kernel::m_console.print("Kernel loaded!\n");
 
+
     hal::test_isr test;
     hal::isr_dispatcher::instance().register_isr(0, test);
 
-	__asm__ volatile("int $0" : :);
+    task::scheduler::instance().start(&run_kernel);
+    //test_print();
 
     while(true);
 }

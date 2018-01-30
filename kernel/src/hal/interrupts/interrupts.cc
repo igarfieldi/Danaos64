@@ -1,9 +1,17 @@
 #include "interrupts.h"
 #include "main/kernel.h"
+#include "hal/task/context.h"
+#include "main/task/scheduler.h"
+
+
 
 extern "C" void isr_handler(hal::isr_frame_equal_priv *isr_state) {
-	kernel::m_console.print("Interrupt: [] err []\n", isr_state->int_num, isr_state->error_code);
-	hal::isr_dispatcher::instance().trigger(isr_state->int_num);
+	kernel::m_console.print("Interrupt no.: [] - Error: []\n", isr_state->int_num, isr_state->error_code);
+	
+	const hal::thread_context &next_context = task::scheduler::instance().schedule(hal::thread_context(*isr_state));
+	next_context.change_frame(*isr_state);
+
+	//hal::isr_dispatcher::instance().trigger(isr_state->int_num);
 }
 
 namespace hal {

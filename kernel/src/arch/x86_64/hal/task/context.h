@@ -10,13 +10,17 @@ namespace task {
 
 namespace hal {
 
-    struct thread_context {
+    /*struct thread_context {
         uint64_t rbx;
         uint64_t rbp;
         uint64_t r12;
         uint64_t r13;
         uint64_t r14;
         uint64_t r15;
+        uint64_t rsp;
+    };*/
+
+    struct thread_context {
         uint64_t rsp;
     };
 

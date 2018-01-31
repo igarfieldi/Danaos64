@@ -31,8 +31,8 @@ static void test1() {
         for(unsigned long long v = 1; v < 3000000; ++v) {
             j += math::logull(10, v);
         }
-        //task::scheduler::instance().yield();
-        task::scheduler::instance().schedule();
+        task::scheduler::instance().yield();
+        //task::scheduler::instance().schedule();
     }
 }
 
@@ -43,8 +43,8 @@ static void test2() {
         for(unsigned long long v = 1; v < 3000000; ++v) {
             j += math::logull(10, v);
         }
-        //task::scheduler::instance().yield();
-        task::scheduler::instance().schedule();
+        task::scheduler::instance().yield();
+        //task::scheduler::instance().schedule();
     }
 }
 
@@ -55,8 +55,8 @@ static void test3() {
         for(unsigned long long v = 1; v < 3000000; ++v) {
             j += math::logull(10, v);
         }
-        //task::scheduler::instance().yield();
-        task::scheduler::instance().schedule();
+        task::scheduler::instance().yield();
+        //task::scheduler::instance().schedule();
     }
     debug::backtrace();
 }

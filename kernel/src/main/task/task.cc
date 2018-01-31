@@ -39,7 +39,8 @@ namespace task {
         next.m_state = state::RUNNING;
 
         // Swap the state of the tasks and exchange the contexts
-        m_context = context;
+        m_context.rsp = context.rsp;
+        //m_context = context;
         return next.m_context;
     }
 

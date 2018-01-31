@@ -25,35 +25,36 @@ kernel::kernel(const multiboot_info *mbinfo) {
 }
 
 static void test1() {
-    for(size_t i = 0; i < 5; ++i) {
+    for(size_t i = 0; i < 5000; ++i) {
         kernel::m_console.print("A: {}\n", i);
         volatile unsigned long long j = 0;
-        for(unsigned long long v = 1; v < 1000000; ++v) {
+        for(unsigned long long v = 1; v < 3000000; ++v) {
             j += math::logull(10, v);
         }
-        task::scheduler::instance().yield();
+        //task::scheduler::instance().yield();
+        task::scheduler::instance().schedule();
     }
 }
 
 static void test2() {
-    for(size_t i = 0; i < 4; ++i) {
+    for(size_t i = 0; i < 4000; ++i) {
         kernel::m_console.print("B: {}\n", i);
         volatile unsigned long long j = 0;
-        for(unsigned long long v = 1; v < 1000000; ++v) {
+        for(unsigned long long v = 1; v < 3000000; ++v) {
             j += math::logull(10, v);
         }
-        task::scheduler::instance().yield();
+        //task::scheduler::instance().yield();
     }
 }
 
 static void test3() {
-    for(size_t i = 0; i < 3; ++i) {
+    for(size_t i = 0; i < 3000; ++i) {
         kernel::m_console.print("C: {}\n", i);
         volatile unsigned long long j = 0;
-        for(unsigned long long v = 1; v < 1000000; ++v) {
+        for(unsigned long long v = 1; v < 3000000; ++v) {
             j += math::logull(10, v);
         }
-        task::scheduler::instance().yield();
+        //task::scheduler::instance().yield();
     }
     debug::backtrace();
 }

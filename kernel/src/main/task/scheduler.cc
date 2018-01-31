@@ -33,6 +33,30 @@ namespace task {
         __asm__ volatile("int $0" : :);
     }
 
+    void scheduler::schedule() {
+        // If no other task is active don't do anything
+        if(m_tasks.size() == 0) {
+            return ;
+        } else {
+            task *curr = m_active;
+            task *next = m_tasks.dequeue();
+
+            // Loop the tasks until one is found that is ready
+            while(!next->is_ready()) {
+                if(!next->is_finished()) {
+                    m_tasks.enqueue(next);
+                }
+                next = m_tasks.dequeue();
+            }
+
+            // Re-queue the current task and continue the next one
+            m_tasks.enqueue(curr);
+            m_active = next;
+
+            curr->task_switch(*next);
+        }
+    }
+
     const hal::thread_context &scheduler::schedule(const hal::thread_context &curr_context) {
         // If no other task is active don't do anything
         if(m_tasks.size() == 0) {

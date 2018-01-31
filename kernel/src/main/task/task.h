@@ -19,7 +19,7 @@ namespace task {
         };
 
     private:
-        static constexpr size_t STACK_SIZE = 512;
+        static constexpr size_t STACK_SIZE = 1024;
         uintptr_t stack[STACK_SIZE];
         hal::thread_context m_context;
         state m_state;
@@ -44,6 +44,7 @@ namespace task {
         void block();
         void ready();
 
+        void task_switch(task &next);
         const hal::thread_context &task_switch(const hal::thread_context &context, task &next);
     };
 

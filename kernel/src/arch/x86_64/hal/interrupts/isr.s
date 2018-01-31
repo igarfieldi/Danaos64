@@ -73,9 +73,6 @@ gen_normal_isr	// 31
 
 
 isr_caller:
-	cld												// Clear the direction bit in accordance
-													// with C calling convention
-	
 	// Save the registers mandated by CDECL (rest will be saved by callee if used)
 	pushq		%rdi
 	pushq		%rsi

@@ -26,6 +26,14 @@ namespace task {
         m_state = state::READY;
     }
 
+    void task::task_switch(task &next) {
+        this->m_state = state::WAITING;
+        next.m_state = state::RUNNING;
+
+        // Swap the state of the tasks and exchange the contexts
+        switch_context(&m_context, &next.m_context);
+    }
+
     const hal::thread_context &task::task_switch(const hal::thread_context &context, task &next) {
         this->m_state = state::WAITING;
         next.m_state = state::RUNNING;

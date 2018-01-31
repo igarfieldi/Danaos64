@@ -26,4 +26,50 @@ namespace hal {
 
 } // namespace hal
 
+namespace task {
+
+    struct task_state_segment {
+        class segment {
+        private:
+            uint16_t seg;
+            uint16_t reserved;
+
+        public:
+            segment() = default;
+            segment(uint16_t seg) : seg(seg), reserved(0) {}
+            segment &operator=(uint16_t seg)    { this->seg = seg; }
+            operator uint16_t() const           { return seg; }
+        }
+
+        segment link;
+        uint32_t esp0;
+        segment ss0;
+        uint32_t esp1;
+        segment ss1;
+        uint32_t esp2;
+        segment ss2;
+        uint32_t cr3;
+        uint32_t eip;
+        uint32_t eflags;
+        uint32_t eax;
+        uint32_t ecx;
+        uint32_t edx;
+        uint32_t ebx;
+        uint32_t esp;
+        uint32_t ebp;
+        uint32_t esi;
+        uint32_t edi;
+        segment es;
+        segment cs;
+        segment ss;
+        segment ds;
+        segment fs;
+        segment gs;
+        segment ldtr;
+        uint16_t iopb_offset;
+        uint16_t reserved;
+    } __attribute__((packed));
+
+} // namespace task
+
 #endif //DANAOS_KERNEL_ARCH_I386_HAL_TASK_CONTEXT_H_

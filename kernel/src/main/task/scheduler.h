@@ -22,6 +22,7 @@ namespace task {
         void yield() const;
         void block();
 
+        void schedule();
         const hal::thread_context &schedule(const hal::thread_context &curr_context);
     };
 

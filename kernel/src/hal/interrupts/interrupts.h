@@ -15,20 +15,7 @@ namespace hal {
 		virtual void disable() noexcept = 0;
 		virtual bool is_active() const noexcept = 0;
 
-		virtual void trigger() noexcept = 0;
-	};
-
-	class test_isr : public isr {
-	public:
-		virtual ~test_isr() {}
-		
-		virtual void enable() noexcept {}
-		virtual void disable() noexcept {}
-		virtual bool is_active() const noexcept {return true;}
-
-		virtual void trigger() noexcept {
-			kernel::m_console.print("Triggered!\n");
-		}
+		virtual void trigger(isr_frame &frame) noexcept = 0;
 	};
 
 	class isr_dispatcher {
@@ -49,7 +36,7 @@ namespace hal {
 		void register_isr(size_t index, isr &isr) noexcept;
 		void deregister_isr(size_t index) noexcept;
 
-		void trigger(size_t index) const;
+		void trigger(isr_frame &frame) const;
 	};
 
 } // namespace hal

@@ -22,7 +22,7 @@ namespace hal {
         stack[-5] = 0x0;                                                // Error code
         stack[-4] = reinterpret_cast<uint64_t>(&task::task::start);     // Return RIP
         stack[-3] = 0x8;                                                // Return CS
-        stack[-2] = 0;                                                  // RFLAGS
+        stack[-2] = 0x200;                                              // RFLAGS (enable interrupts)
         stack[-1] = reinterpret_cast<uint64_t>(&stack[0]);              // Return RSP
         stack[0] = 0x10;                                                // Return SS
         

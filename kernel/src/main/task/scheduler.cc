@@ -16,7 +16,7 @@ namespace task {
 
         kernel::m_console.print("Idling\n");
         while(true) {
-            asm volatile("cli\t\nhlt\t\n");
+            asm volatile("sti\t\nhlt\t\n");
         }
     }
 

@@ -16,7 +16,7 @@ namespace hal {
         stack[-5] = 0x0;												// Error code
         stack[-4] = reinterpret_cast<uint64_t>(&task::task::start);		// Return EIP
         stack[-3] = 0x8;												// Return CS
-        stack[-2] = 0x0;                                                // EFLAGS
+        stack[-2] = 0x200;                                              // EFLAGS (enable interrupts)
         stack[-1] = 0xCAFEBABE;											// Return address of start function (musn't be called!)
         stack[0] = reinterpret_cast<uint64_t>(&task);			    	// Start function parameter
         

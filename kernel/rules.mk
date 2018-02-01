@@ -22,10 +22,18 @@ KERNELSRC			:= $(patsubst $(KERNELDIR)/$(SRCDIR)/arch/%,,$(KERNELSRC))
 KERNELSRC			+= $(shell $(FIND) $(KERNELDIR)/$(SRCDIR)/arch/$(ISA) -name "*.s")
 KERNELSRC			+= $(shell $(FIND) $(KERNELDIR)/$(SRCDIR)/arch/$(ISA) -name "*.c")
 KERNELSRC			+= $(shell $(FIND) $(KERNELDIR)/$(SRCDIR)/arch/$(ISA) -name "*.cc")
+KERNELSRC			+= $(shell $(FIND) $(KERNELDIR)/$(SRCDIR)/arch/$(PLATFORM) -name "*.s")
+KERNELSRC			+= $(shell $(FIND) $(KERNELDIR)/$(SRCDIR)/arch/$(PLATFORM) -name "*.c")
+KERNELSRC			+= $(shell $(FIND) $(KERNELDIR)/$(SRCDIR)/arch/$(PLATFORM) -name "*.cc")
+KERNELSRC			+= $(shell $(FIND) $(KERNELDIR)/$(SRCDIR)/arch/$(ISA)-$(PLATFORM) -name "*.s")
+KERNELSRC			+= $(shell $(FIND) $(KERNELDIR)/$(SRCDIR)/arch/$(ISA)-$(PLATFORM) -name "*.c")
+KERNELSRC			+= $(shell $(FIND) $(KERNELDIR)/$(SRCDIR)/arch/$(ISA)-$(PLATFORM) -name "*.cc")
 # Sort the source list and remove duplicates with that
 KERNELSRC			:= $(sort $(KERNELSRC))
 
-KERNELARCHINC		:= ./$(KERNELDIR)/$(SRCDIR)/arch/$(ISA)
+KERNELARCHINC		:= -I./$(KERNELDIR)/$(SRCDIR)/arch/$(ISA)
+KERNELARCHINC		+= -I./$(KERNELDIR)/$(SRCDIR)/arch/$(PLATFORM)
+KERNELARCHINC		+= -I./$(KERNELDIR)/$(SRCDIR)/arch/$(ISA)-$(PLATFORM)
 
 # Get the corresponding object files by substituting the endings and the directory
 KERNELOBJ			:= $(patsubst $(KERNELDIR)/$(SRCDIR)/%,$(KERNELDIR)/$(OBJDIR)/%,$(KERNELSRC))
@@ -75,7 +83,7 @@ ifdef VERBOSE
 	@echo "    (ASM)     $< --> $@"
 endif
 	@mkdir -p $(dir $@)
-	@$(ASM) -MD $(patsubst %.o,%.d,$@) $< -o $@ -I$(KERNELINCDIR) -I$(KERNELARCHINC) $(TARGETASMFLAGS)
+	@$(ASM) -MD $(patsubst %.o,%.d,$@) $< -o $@ -I$(KERNELINCDIR) $(KERNELARCHINCS) $(TARGETASMFLAGS)
 
 # C rule
 $(KERNELDIR)/$(OBJDIR)/%.o : $(KERNELDIR)/$(SRCDIR)/%.c Makefile
@@ -83,7 +91,7 @@ ifdef VERBOSE
 	@echo "    (C)       $< --> $@"
 endif
 	@mkdir -p $(dir $@)
-	@$(CC) -MD -c $< -o $@ -I$(KERNELINCDIR) -I$(KERNELARCHINC) $(TARGETCCFLAGS)
+	@$(CC) -MD -c $< -o $@ -I$(KERNELINCDIR) $(KERNELARCHINC) $(TARGETCCFLAGS)
 
 # C++ rule
 $(KERNELDIR)/$(OBJDIR)/%.o : $(KERNELDIR)/$(SRCDIR)/%.cc Makefile
@@ -91,7 +99,7 @@ ifdef VERBOSE
 	@echo "    (CC)      $< --> $@"
 endif
 	@mkdir -p $(dir $@)
-	@$(CPP) -MD -c $< -o $@ -I$(KERNELINCDIR) -I$(KERNELARCHINC) $(TARGETCPPFLAGS)
+	@$(CPP) -MD -c $< -o $@ -I$(KERNELINCDIR) $(KERNELARCHINC) $(TARGETCPPFLAGS)
 
 clean-kernel:
 	@echo "    (MAKE)    Cleaning kernel..."

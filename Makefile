@@ -11,14 +11,30 @@ ifeq ($(shell uname -s), Linux)
 	HOST		:= linux
 endif
 
-# Default target
+# Default ISA
 ifeq ($(ISA),)
 	ISA			:= x86_64
 endif
 
-# Check for valid ISA
+# Default platform
+ifeq ($(PLATFORM),)
+	PLATFORM	:= pc
+endif
+
+# Check for valid ISA and platform
 ifeq ($(or $(filter i386,$(ISA)),$(filter x86_64,$(ISA))),)
-    $(error '$(ISA)' is not a supported target)
+    $(error '$(ISA)' is not a supported ISA)
+endif
+
+# Check for valid platform
+ifeq ($(filter pc,$(PLATFORM)),)
+    $(error '$(PLATFORM)' is not a supported platform)
+endif
+
+# Check for valid platform-ISA combination
+TARGET			:= $(ISA)-$(PLATFORM)-elf
+ifeq ($(or $(filter i386-pc-elf,$(TARGET)),$(filter x86_64-pc-elf,$(TARGET))),)
+    $(error '$(ISA)-$(PLATFORM)' is not a supported platform)
 endif
 
 # Check for selected bootloader
@@ -30,11 +46,9 @@ ifeq ($(or $(filter CUSTOM,$(LOADER)),$(filter GRUB2,$(LOADER))),)
     $(error '$(LOADER)' is not a supported bootloader)
 endif
 
-TARGET			:= $(ISA)-elf
-
 SRCDIR			:= src
-OBJDIR			:= build/$(ISA)/obj
-BINDIR			:= build/$(ISA)/bin
+OBJDIR			:= build/$(ISA)-$(PLATFORM)/obj
+BINDIR			:= build/$(ISA)-$(PLATFORM)/bin
 CFGDIR			:= cfg
 
 MBRDIR			:= mbr

@@ -15,12 +15,9 @@
 #include "hal/hal.h"
 #include "hal/interrupts/interrupts.h"
 #include "main/task/scheduler.h"
-#include "main/task/sync/semaphore.h"
 
 console kernel::m_console;
 elf::symbol_lookup kernel::m_elf_lookup;
-
-sync::semaphore sem;
 
 kernel::kernel(const multiboot_info *mbinfo) {
 	(void)mbinfo;
@@ -28,43 +25,34 @@ kernel::kernel(const multiboot_info *mbinfo) {
 }
 
 static void test1(int argc, char **argv) {
-    sem.wait();
-    for(size_t i = 0; i < 5; ++i) {
+    for(size_t i = 0; i < 500; ++i) {
         kernel::m_console.print("A: {}\n", i);
         volatile unsigned long long j = 0;
-        for(unsigned long long v = 1; v < 1000000; ++v) {
+        for(unsigned long long v = 1; v < 100000; ++v) {
             j += math::logull(10, v);
         }
-        task::scheduler::instance().yield();
     }
-    sem.signal();
 }
 
 static void test2(int argc, char **argv) {
-    sem.wait();
-    for(size_t i = 0; i < 4; ++i) {
+    for(size_t i = 0; i < 400; ++i) {
         kernel::m_console.print("B: {}\n", i);
         volatile unsigned long long j = 0;
-        for(unsigned long long v = 1; v < 1000000; ++v) {
+        for(unsigned long long v = 1; v < 500000; ++v) {
             j += math::logull(10, v);
         }
-        task::scheduler::instance().yield();
     }
-    sem.signal();
 }
 
 static void test3(int argc, char **argv) {
-    sem.wait();
     kernel::m_console.print("Params: {} {}\n", argc, argv[0]);
-    for(size_t i = 0; i < 3; ++i) {
+    for(size_t i = 0; i < 300; ++i) {
         kernel::m_console.print("C: {}\n", i);
         volatile unsigned long long j = 0;
         for(unsigned long long v = 1; v < 1000000; ++v) {
             j += math::logull(10, v);
         }
-        task::scheduler::instance().yield();
     }
-    sem.signal();
 }
 
 static void run_kernel() {
@@ -72,10 +60,10 @@ static void run_kernel() {
     char *params[1] = { param1 };
     task::task task1(test1, 0, nullptr);
     task::task task2(test2, 0, nullptr);
-    task::task task3(test3, 1, params);
+    //task::task task3(test3, 1, params);
     task::scheduler::instance().ready(task1);
     task::scheduler::instance().ready(task2);
-    task::scheduler::instance().ready(task3);
+    //task::scheduler::instance().ready(task3);
 
     
     task::scheduler::instance().start();
@@ -240,10 +228,5 @@ extern "C" void kernelMain(uint32_t magic, uintptr_t info) {
     hal::init_hal();
 
     kernel::m_console.print("Kernel loaded!\n");
-
-
-    hal::test_isr test;
-    hal::isr_dispatcher::instance().register_isr(0, test);
-
     run_kernel();
 }

@@ -4,14 +4,13 @@
 
 namespace task {
 
-    task::task(void (*start)()) : m_context(hal::create_context(&stack[STACK_SIZE-1], *this)), m_state(state::CREATED), m_func(start) {
+    task::task(void (*start)(int, char **), int argc, char **argv) : m_context(hal::create_context(&stack[STACK_SIZE-1], *this)),
+            m_state(state::CREATED), m_func(start), m_argc(argc), m_argv(argv) {
     }
 
     void task::start(task &task) {
         // Start the task by calling the stored function
-        kernel::m_console.print("Task begins!\n");
-        task.m_func();
-        kernel::m_console.print("Task is over!\n");
+        task.m_func(task.m_argc, task.m_argv);
 
         // Give task free for scheduler cleanup and yield to next task
         task.m_state = state::FINISHED;

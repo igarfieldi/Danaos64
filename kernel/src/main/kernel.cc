@@ -15,16 +15,20 @@
 #include "hal/hal.h"
 #include "hal/interrupts/interrupts.h"
 #include "main/task/scheduler.h"
+#include "main/task/sync/semaphore.h"
 
 console kernel::m_console;
 elf::symbol_lookup kernel::m_elf_lookup;
+
+sync::semaphore sem;
 
 kernel::kernel(const multiboot_info *mbinfo) {
 	(void)mbinfo;
 	debug::backtrace(2);
 }
 
-static void test1() {
+static void test1(int argc, char **argv) {
+    sem.wait();
     for(size_t i = 0; i < 5; ++i) {
         kernel::m_console.print("A: {}\n", i);
         volatile unsigned long long j = 0;
@@ -33,9 +37,11 @@ static void test1() {
         }
         task::scheduler::instance().yield();
     }
+    sem.signal();
 }
 
-static void test2() {
+static void test2(int argc, char **argv) {
+    sem.wait();
     for(size_t i = 0; i < 4; ++i) {
         kernel::m_console.print("B: {}\n", i);
         volatile unsigned long long j = 0;
@@ -44,9 +50,12 @@ static void test2() {
         }
         task::scheduler::instance().yield();
     }
+    sem.signal();
 }
 
-static void test3() {
+static void test3(int argc, char **argv) {
+    sem.wait();
+    kernel::m_console.print("Params: {} {}\n", argc, argv[0]);
     for(size_t i = 0; i < 3; ++i) {
         kernel::m_console.print("C: {}\n", i);
         volatile unsigned long long j = 0;
@@ -55,20 +64,22 @@ static void test3() {
         }
         task::scheduler::instance().yield();
     }
+    sem.signal();
 }
 
 static void run_kernel() {
-    task::task task2(test2);
-    task::task task3(test3);
+    char param1[6] = "test3";
+    char *params[1] = { param1 };
+    task::task task1(test1, 0, nullptr);
+    task::task task2(test2, 0, nullptr);
+    task::task task3(test3, 1, params);
+    task::scheduler::instance().ready(task1);
     task::scheduler::instance().ready(task2);
     task::scheduler::instance().ready(task3);
 
-    test1();
-    kernel::m_console.print("It's over!\n");
-    debug::backtrace();
-    while(true) {
-        //task::scheduler::instance().yield();
-    }
+    
+    task::scheduler::instance().start();
+    while(true);
 }
 
 extern "C" void kernelMain(uint32_t magic, uintptr_t info) {
@@ -234,8 +245,5 @@ extern "C" void kernelMain(uint32_t magic, uintptr_t info) {
     hal::test_isr test;
     hal::isr_dispatcher::instance().register_isr(0, test);
 
-    task::scheduler::instance().start(&run_kernel);
-    //test_print();
-
-    while(true);
+    run_kernel();
 }

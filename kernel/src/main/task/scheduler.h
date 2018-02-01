@@ -11,18 +11,22 @@ namespace task {
     class scheduler {
     private:
         util::queue<task*> m_tasks;
+        task m_idle;
         task *m_active;
 
+        static void idle(int argc, char ** argv) noexcept;
+
     public:
-        scheduler();
+        scheduler() noexcept;
 
-        static scheduler &instance();
-        void start(void (*func)(void));
-        void ready(task &task);
-        void block();
+        static scheduler &instance() noexcept;
+        void start() noexcept;
+        void ready(task &task) noexcept;
+        void block() noexcept;
 
-        void yield();
-        const hal::task_context &schedule(const hal::task_context &curr_context);
+        void yield() noexcept;
+        const hal::task_context &schedule(const hal::task_context &curr_context) noexcept;
+        task &active_task() noexcept;
     };
 
 } // namespace task

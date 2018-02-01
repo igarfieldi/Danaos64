@@ -22,10 +22,12 @@ namespace task {
         volatile uintptr_t stack[STACK_SIZE];
         hal::task_context m_context;
         state m_state;
-        void (*m_func)();
+        void (*m_func)(int, char **);
+        int m_argc;
+        char **m_argv;
 
     public:
-        task(void (*start)());
+        task(void (*start)(int, char **), int argc, char **argv);
         static void start(task &task);
 
         constexpr bool is_ready() const {

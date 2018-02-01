@@ -3,38 +3,56 @@
 
 namespace task {
 
-    scheduler::scheduler() : m_tasks(), m_active(nullptr) {}
+    scheduler::scheduler() noexcept : m_tasks(), m_idle(&scheduler::idle, 0 , nullptr), m_active(&m_idle) {}
 
-    scheduler &scheduler::instance() {
+    scheduler &scheduler::instance() noexcept {
         static scheduler instance;
         return instance;
     }
+    
+    void scheduler::idle(int argc, char ** argv) noexcept {
+        (void) argc;
+        (void) argv;
 
-    void scheduler::start(void (*func)(void)) {
-        // This will live as long as the task isn't ending, at which point it won't matter
-        task init(func);
-        m_active = &init;
-        init.ready();
-        task::start(init);
+        kernel::m_console.print("Idling\n");
+        while(true) {
+            asm volatile("cli\t\nhlt\t\n");
+        }
     }
 
-    void scheduler::ready(task &task) {
+    void scheduler::start() noexcept {
+        if(!m_tasks.is_empty()) {
+            m_active = m_tasks.dequeue();
+        }
+        m_active->ready();
+        task::start(*m_active);
+    }
+
+    void scheduler::ready(task &task) noexcept {
         m_tasks.enqueue(&task);
         task.ready();
     }
 
-    void scheduler::block() {
+    void scheduler::block() noexcept {
         // Block the current task and yield to the next queue'd one
         m_tasks.front()->block();
         yield();
     }
 
-    void scheduler::yield() {
+    task &scheduler::active_task() noexcept {
+        return *m_active;
+    }
+
+    void scheduler::yield() noexcept {
         // If no other task is active don't do anything
         if(m_tasks.is_empty()) {
-            return ;
+            if(m_active->is_finished()) {
+                task &curr = *m_active;
+                m_active = &m_idle;
+                curr.task_switch(*m_active);
+            }
         } else {
-            task *curr = m_active;
+            task &curr = *m_active;
             task *next = m_tasks.dequeue();
 
             // Loop the tasks until one is found that is ready
@@ -46,21 +64,28 @@ namespace task {
             }
 
             // Re-queue the current task and continue the next one
-            if(!curr->is_finished()) {
-            	m_tasks.enqueue(curr);
+                // We don't requeue the idle task either
+            if(!curr.is_finished() && (&curr != &m_idle)) {
+            	m_tasks.enqueue(&curr);
             }
             m_active = next;
 
-            return curr->task_switch(*next);
+            return curr.task_switch(*next);
         }
     }
 
-    const hal::task_context &scheduler::schedule(const hal::task_context &curr_context) {
+    const hal::task_context &scheduler::schedule(const hal::task_context &curr_context) noexcept {
         // If no other task is active don't do anything
         if(m_tasks.is_empty()) {
-            return curr_context;
+            if(m_active->is_finished()) {
+                task &curr = *m_active;
+                m_active = &m_idle;
+                return curr.task_switch(curr_context, *m_active);
+            } else {
+                return curr_context;
+            }
         } else {
-            task *curr = m_active;
+            task &curr = *m_active;
             task *next = m_tasks.dequeue();
 
             // Loop the tasks until one is found that is ready
@@ -72,12 +97,13 @@ namespace task {
             }
 
             // Re-queue the current task and continue the next one
-            if(!curr->is_finished()) {
-            	m_tasks.enqueue(curr);
+                // We don't requeue the idle task either
+            if(!curr.is_finished() && (&curr != &m_idle)) {
+            	m_tasks.enqueue(&curr);
             }
             m_active = next;
 
-            return curr->task_switch(curr_context, *next);
+            return curr.task_switch(curr_context, *next);
         }
     }
 }

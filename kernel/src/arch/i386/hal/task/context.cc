@@ -5,13 +5,16 @@
 namespace hal {
 
     task_context create_context(volatile uint32_t *stack, task::task &task) {
-        task_context context(&stack[-10]);
+        task_context context(&stack[-13]);
 
         // New state
-        stack[-10] = reinterpret_cast<uint64_t>(&stack[0]);				// EBP
-        stack[-9] = 0xAAAAAAAA;											// EAX
+        stack[-13] = 0xEDEDEDED;										// EDI
+        stack[-12] = 0xE5E5E5E5;										// ESI
+        stack[-11] = reinterpret_cast<uint64_t>(&stack[0]);				// EBP
+        stack[-10] = 0xBBBBBBBB;										// EBX
+        stack[-9] = 0xDDDDDDDD;											// EDX
         stack[-8] = 0xCCCCCCCC;											// ECX
-        stack[-7] = 0xDDDDDDDD;											// EDX
+        stack[-7] = 0xAAAAAAAA;											// EAX
         stack[-6] = 0x0;												// Interrupt number
         stack[-5] = 0x0;												// Error code
         stack[-4] = reinterpret_cast<uint64_t>(&task::task::start);		// Return EIP

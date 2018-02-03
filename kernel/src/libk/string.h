@@ -6,6 +6,7 @@
 namespace std {
 
 	void *memset(void *str, unsigned char c, size_t len);
+	void *memcpy(void *dst, const void *src, size_t bytes);
     size_t strlen(const char *str);
     int strncmp(const char *str1, const char *str2, size_t count);
 }

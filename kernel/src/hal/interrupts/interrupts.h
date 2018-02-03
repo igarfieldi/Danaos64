@@ -14,7 +14,6 @@ namespace hal {
 		virtual void enable() noexcept = 0;
 		virtual void disable() noexcept = 0;
 		virtual bool is_active() const noexcept = 0;
-
 		virtual void trigger(isr_frame &frame) noexcept = 0;
 	};
 

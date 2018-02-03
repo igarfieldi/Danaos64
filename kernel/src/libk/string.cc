@@ -9,6 +9,17 @@ namespace std {
 		}
 		return str;
 	}
+
+	void *memcpy(void *dst, const void *src, size_t bytes) {
+        char *dest = reinterpret_cast<char *>(dst);
+        const char *source = reinterpret_cast<const char *>(src);
+
+        for(size_t i = 0; i < bytes; ++i) {
+            dest[i] = source[i];
+        }
+
+        return dst;
+    }
 	
     size_t strlen(const char *str) {
         size_t len = 0;

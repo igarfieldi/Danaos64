@@ -8,7 +8,7 @@
 namespace hal {
 
 	// TODO: const-correctness?
-	class interval_timer : public isr{
+	class interval_timer : public isr {
 	private:
 		// TODO: proper description?
 		enum class operating_mode : uint8_t {

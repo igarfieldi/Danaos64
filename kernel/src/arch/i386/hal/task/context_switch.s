@@ -16,10 +16,13 @@ switch_context:
 	pushl		8(%esp)								// EIP
 	subl		$8, %esp							// Error code and interrupt number
 	// Registers
-	pushl		%edx
-	pushl		%ecx
 	pushl		%eax
+	pushl		%ecx
+	pushl		%edx
+	pushl		%ebx
 	pushl		%ebp
+	pushl		%esi
+	pushl		%edi
 	// Save new stack into current context
 	movl		%esp, (%eax)
 	// Now we need to swap to the other context's stack; we do that by pushing 
@@ -28,10 +31,13 @@ switch_context:
 	popl		%esp
 	
 	// Now restore the rest of the registers, just like an ISR would
+	popl		%edi
+	popl		%esi
 	popl		%ebp
-	popl		%eax
-	popl		%ecx
+	popl		%ebx
 	popl		%edx
+	popl		%ecx
+	popl		%eax
 	
 	addl		$8, %esp					// Remove error code and interrupt number from stack
 	

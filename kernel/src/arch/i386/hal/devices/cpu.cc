@@ -52,5 +52,41 @@ namespace hal {
 			}
 		}
 
+		cr0 read_cr0() noexcept {
+			cr0 reg;
+			asm volatile("movl %%cr0, %0" : "=r"(reg) ::);
+			return reg;
+		}
+
+		uint32_t read_cr2() noexcept {
+			uint32_t reg;
+			asm volatile("movl %%cr2, %0" : "=r"(reg) ::);
+			return reg;
+		}
+
+		cr3 read_cr3() noexcept {
+			cr3 reg;
+			asm volatile("movl %%cr3, %0" : "=r"(reg) ::);
+			return reg;
+		}
+
+		cr4 read_cr4() noexcept {
+			cr4 reg;
+			asm volatile("movl %%cr4, %0" : "=r"(reg) ::);
+			return reg;
+		}
+
+		void write_cr0(cr0 reg) noexcept {
+			asm volatile("movl %0, %%cr0" :: "r"(reg) :);
+		}
+
+		void write_cr3(cr3 reg) noexcept {
+			asm volatile("movl %0, %%cr3" :: "r"(reg) :);
+		}
+
+		void write_cr4(cr4 reg) noexcept {
+			asm volatile("movl %0, %%cr4" :: "r"(reg) :);
+		}
+
 	} // namespace cpu
 } // namespace hal

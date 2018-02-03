@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include "main/task/sync/spinlock.h"
 
 namespace devices {
 
@@ -18,9 +19,11 @@ namespace devices {
         size_t m_width;
         size_t m_height;
 
+        sync::spin_lock m_lock;
+
         cga();
         
-        size_t buffer_index(size_t x, size_t y) {
+        constexpr size_t buffer_index(size_t x, size_t y) {
         	return 2*(y*m_width + x);
         }
     

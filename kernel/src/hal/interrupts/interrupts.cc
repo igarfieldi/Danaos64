@@ -48,7 +48,8 @@ namespace hal {
 			kernel::panic("Invalid ISR index: {}", frame.int_num);
 		}
 		if(m_isrs[frame.int_num] == nullptr) {
-			kernel::panic("Missing ISR handler: {}", frame.int_num);
+			kernel::panic("Missing ISR handler: {}, "
+						"error code: []", frame.int_num, frame.error_code);
 		}
 		m_isrs[frame.int_num]->trigger(frame);
 	}

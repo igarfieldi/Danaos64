@@ -76,11 +76,15 @@ isr_caller:
 	cld												// Clear the direction bit in accordance
 													// with C calling convention
 	
-	// Save the registers mandated by CDECL (rest will be saved by callee if used)
-	pushl		%edx
-	pushl		%ecx
+	// Save registers (CPU state)
 	pushl		%eax
+	pushl		%ecx
+	pushl		%edx
+	pushl		%ebx
 	pushl		%ebp
+	pushl		%esi
+	pushl		%edi
+	// Save stack pointer
 	pushl		%esp
 
 	// Argument will be interrupt state
@@ -90,12 +94,16 @@ isr_caller:
 _endIsr:
 	addl		$4, %esp
 
-	// Restore the registers
+	// Restore the stack and registers
 	popl		%esp
+
+	popl		%edi
+	popl		%esi
 	popl		%ebp
-	popl		%eax
-	popl		%ecx
+	popl		%ebx
 	popl		%edx
+	popl		%ecx
+	popl		%eax
 	
 	addl		$8, %esp					// Remove error code and interrupt number from stack
 	
